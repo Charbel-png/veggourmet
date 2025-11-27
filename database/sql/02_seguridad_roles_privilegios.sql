@@ -124,16 +124,16 @@ TO 'rol_cliente';
 
 -- 5. (Opcional) Ejemplo de usuarios físicos que usarían estos roles
 
--- CREATE USER 'admin_app'@'localhost'    IDENTIFIED BY 'Admin123!';
--- CREATE USER 'operador_app'@'localhost' IDENTIFIED BY 'Operador123!';
--- CREATE USER 'cliente_app'@'localhost'  IDENTIFIED BY 'Cliente123!';
+CREATE USER 'admin_app'@'localhost'    IDENTIFIED BY 'Admin123!';
+CREATE USER 'operador_app'@'localhost' IDENTIFIED BY 'Operador123!';
+CREATE USER 'cliente_app'@'localhost'  IDENTIFIED BY 'Cliente123!';
 
--- GRANT 'rol_admin'    TO 'admin_app'@'localhost';
--- GRANT 'rol_operador' TO 'operador_app'@'localhost';
--- GRANT 'rol_cliente'  TO 'cliente_app'@'localhost';
+GRANT 'rol_admin'    TO 'admin_app'@'localhost';
+GRANT 'rol_operador' TO 'operador_app'@'localhost';
+GRANT 'rol_cliente'  TO 'cliente_app'@'localhost';
 
--- SET DEFAULT ROLE 'rol_admin'    TO 'admin_app'@'localhost';
--- SET DEFAULT ROLE 'rol_operador' TO 'operador_app'@'localhost';
--- SET DEFAULT ROLE 'rol_cliente'  TO 'cliente_app'@'localhost';
+SET DEFAULT ROLE 'rol_admin'    FOR 'admin_app'@'localhost';
+SET DEFAULT ROLE 'rol_operador' FOR 'operador_app'@'localhost';
+SET DEFAULT ROLE 'rol_cliente'  FOR 'cliente_app'@'localhost';
 
 -- FLUSH PRIVILEGES;
