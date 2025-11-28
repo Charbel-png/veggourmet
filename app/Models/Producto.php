@@ -6,33 +6,15 @@ use Illuminate\Database\Eloquent\Model;
 
 class Producto extends Model
 {
-    protected $table = 'productos';
-    protected $primaryKey = 'id_producto';
-    public $incrementing = true;
-    protected $keyType = 'int';
-    public $timestamps = false;
+    protected $table = 'productos';          // nombre de la tabla
+    protected $primaryKey = 'id_producto';   // PK de la tabla
+    public $timestamps = false;              // tu tabla no usa created_at/updated_at
 
     protected $fillable = [
         'id_categoria',
         'nombre',
         'descripcion',
+        'precio',
         'estado',
     ];
-
-    public function categoria()
-    {
-        return $this->belongsTo(Categoria::class, 'id_categoria', 'id_categoria');
-    }
-
-    public function inventario()
-    {
-        return $this->hasOne(Inventario::class, 'id_producto', 'id_producto');
-    }
-
-    // Relación con ingredientes por medio de la tabla recetas
-    public function ingredientes()
-    {
-        return $this->belongsToMany(Ingrediente::class, 'recetas', 'id_producto', 'id_ingrediente')
-                    ->withPivot('cantidad');
-    }
 }
