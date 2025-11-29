@@ -8,11 +8,12 @@ class Categoria extends Model
 {
     protected $table = 'categorias';
     protected $primaryKey = 'id_categoria';
-    public $incrementing = true;
-    protected $keyType = 'int';
-    public $timestamps = false; // no hay created_at/updated_at
+    public $timestamps = false;
 
-    protected $fillable = ['nombre', 'descripcion'];
+    protected $fillable = [
+        'nombre',
+        'descripcion',
+    ];
 
     public function productos()
     {

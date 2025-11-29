@@ -6,15 +6,19 @@ use Illuminate\Database\Eloquent\Model;
 
 class Producto extends Model
 {
-    protected $table = 'productos';          // nombre de la tabla
-    protected $primaryKey = 'id_producto';   // PK de la tabla
-    public $timestamps = false;              // tu tabla no usa created_at/updated_at
+    protected $table = 'productos';
+    protected $primaryKey = 'id_producto';
+    public $timestamps = false;
 
     protected $fillable = [
         'id_categoria',
         'nombre',
         'descripcion',
-        'precio',
-        'estado',
+        'estado', // tinyint(4) 1 = activo, 0 = inactivo
     ];
+
+    public function categoria()
+    {
+        return $this->belongsTo(Categoria::class, 'id_categoria', 'id_categoria');
+    }
 }
