@@ -2,19 +2,22 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Relations\Pivot;
+use Illuminate\Database\Eloquent\Model;
 
-class Receta extends Pivot
+class Receta extends Model
 {
     protected $table = 'recetas';
     public $timestamps = false;
-    public $incrementing = false; // no hay id autoincremental
 
     protected $fillable = [
         'id_producto',
         'id_ingrediente',
         'cantidad',
     ];
+
+    // No hay id autoincremental
+    protected $primaryKey = null;
+    public $incrementing = false;
 
     public function producto()
     {

@@ -22,16 +22,17 @@ class ProductoController extends Controller
     public function create()
     {
         $categorias = Categoria::orderBy('nombre')->get();
+        $producto   = new Producto(); // objeto vacío para el form
 
-        return view('productos.create', compact('categorias'));
+        return view('productos.create', compact('categorias', 'producto'));
     }
 
     // POST /productos
     public function store(Request $request)
     {
         $data = $request->validate([
-            'id_categoria' => 'required|exists:categorias,id_categoria',
-            'nombre'       => 'required|string|max:120|unique:productos,nombre',
+            'id_categoria' => 'required|exists:categorias,id_categoria', // 👈 categorias
+            'nombre'       => 'required|string|max:120',
             'descripcion'  => 'nullable|string|max:255',
             'estado'       => 'required|in:0,1',
         ]);
@@ -48,6 +49,7 @@ class ProductoController extends Controller
     {
         $categorias = Categoria::orderBy('nombre')->get();
 
+        // OJO: aquí debe ser 'categorias', no 'categororias'
         return view('productos.edit', compact('producto', 'categorias'));
     }
 
@@ -55,8 +57,8 @@ class ProductoController extends Controller
     public function update(Request $request, Producto $producto)
     {
         $data = $request->validate([
-            'id_categoria' => 'required|exists:categorias,id_categoria',
-            'nombre'       => 'required|string|max:120|unique:productos,nombre,' . $producto->id_producto . ',id_producto',
+            'id_categoria' => 'required|exists:categorias,id_categoria', // 👈 categorias
+            'nombre'       => 'required|string|max:120',
             'descripcion'  => 'nullable|string|max:255',
             'estado'       => 'required|in:0,1',
         ]);
@@ -71,7 +73,7 @@ class ProductoController extends Controller
     // DELETE /productos/{producto}
     public function destroy(Producto $producto)
     {
-        $producto->delete(); // ojo con FKs, si truena ya vemos borrar lógico
+        $producto->delete();
 
         return redirect()
             ->route('productos.index')
