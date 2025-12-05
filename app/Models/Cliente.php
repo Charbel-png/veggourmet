@@ -10,10 +10,9 @@ class Cliente extends Model
     protected $primaryKey = 'id_cliente';
     public $timestamps = false;
 
-    protected $fillable = ['nombre', 'ap_paterno', 'ap_materno'];
-
-    public function pedidos()
-    {
-        return $this->hasMany(Pedido::class, 'id_cliente', 'id_cliente');
-    }
+    protected $fillable = [
+        'nombre',
+        'ap_paterno',
+        'ap_materno',
+    ];
 }

@@ -3,27 +3,20 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ProductoController;
 use App\Http\Controllers\ClienteController;
-use App\Http\Controllers\RecetaController;
 use App\Http\Controllers\PedidoController;
+use App\Http\Controllers\RecetaController;
 
-// Inicio → redirige al dashboard del admin
 Route::get('/', function () {
     return redirect()->route('admin.dashboard');
 });
 
-// Dashboard admin → por ahora, lista de productos
 Route::get('/admin/dashboard', [ProductoController::class, 'index'])
     ->name('admin.dashboard');
 
-// CRUD de productos
 Route::resource('productos', ProductoController::class);
-
-Route::get('/pedidos',PedidoController::class);
-
-// CRUD de clientes
 Route::resource('clientes', ClienteController::class);
+Route::resource('pedidos', PedidoController::class);  // 👈 SOLO ESTA para pedidos
 
-// Recetas anidadas dentro de productos (lo llenamos en la parte 2)
 Route::prefix('productos/{producto}')->group(function () {
     Route::get('recetas',                 [RecetaController::class, 'index'])->name('recetas.index');
     Route::get('recetas/create',          [RecetaController::class, 'create'])->name('recetas.create');
