@@ -8,7 +8,7 @@ class Cliente extends Model
 {
     protected $table = 'clientes';
     protected $primaryKey = 'id_cliente';
-    public $timestamps = false;
+    public $timestamps = false; // la tabla no tiene created_at/updated_at
 
     protected $fillable = [
         'nombre',

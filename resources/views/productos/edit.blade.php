@@ -8,6 +8,21 @@
 <form action="{{ route('productos.update', $producto) }}" method="POST">
     @method('PUT')
     @include('productos.form')
-    <button type="submit" class="btn btn-primary">Actualizar</button>
+
+    <div class="d-flex justify-content-end gap-2 mt-3">
+        {{-- Cancelar --}}
+        <a href="{{ route('productos.index') }}"
+           class="btn btn-outline-secondary"
+           title="Cancelar">
+            <i class="bi bi-x-circle"></i>
+        </a>
+
+        {{-- Guardar --}}
+        <button type="submit"
+                class="btn btn-primary"
+                title="Guardar cambios">
+            <i class="bi bi-check2-circle"></i>
+        </button>
+    </div>
 </form>
 @endsection

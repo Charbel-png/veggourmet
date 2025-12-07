@@ -63,6 +63,11 @@
                             <a class="nav-link" href="{{ route('pedidos.index') }}">Pedidos</a>
                         </li>
                     @endif
+                    @if(auth()->user()->tipo === 'admin')
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ route('operadores.create') }}">Nuevo operador</a>
+                        </li>
+                    @endif
 
                     {{-- CLIENTE solo ve su catálogo --}}
                     @if(auth()->user()->tipo === 'cliente')

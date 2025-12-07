@@ -94,4 +94,39 @@ class AuthController extends Controller
 
         return redirect()->route('login');
     }
+    public function showOperatorForm()
+    {
+        $user = auth()->user();
+
+        if ($user->tipo !== 'admin') {
+            abort(403, 'Solo el administrador puede crear operadores.');
+        }
+
+        return view('auth.register-operator');
+    }
+
+    public function storeOperator(Request $request)
+    {
+        $user = auth()->user();
+
+        if ($user->tipo !== 'admin') {
+            abort(403, 'Solo el administrador puede crear operadores.');
+        }
+
+        $data = $request->validate([
+            'nombre'   => ['required', 'string', 'max:255'],
+            'email'    => ['required', 'email', 'max:255', 'unique:users,email'],
+            'password' => ['required', 'min:6', 'confirmed'],
+        ]);
+
+        User::create([
+            'name'     => $data['nombre'],
+            'email'    => $data['email'],
+            'password' => Hash::make($data['password']),
+            'tipo'     => 'operador',
+        ]);
+
+        return redirect()->route('admin.dashboard')
+            ->with('success', 'Operador creado correctamente.');
+    }
 }

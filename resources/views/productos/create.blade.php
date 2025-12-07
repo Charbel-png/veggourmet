@@ -7,6 +7,20 @@
 
 <form action="{{ route('productos.store') }}" method="POST">
     @include('productos.form')
-    <button type="submit" class="btn btn-primary">Guardar</button>
+
+    <div class="d-flex justify-content-end gap-2 mt-3">
+        <a href="{{ route('productos.index') }}"
+           class="btn btn-outline-secondary"
+           title="Cancelar">
+            <i class="bi bi-x-circle"></i>
+        </a>
+
+        <button type="submit"
+                class="btn btn-success"
+                title="Guardar producto">
+            <i class="bi bi-check2-circle"></i>
+        </button>
+    </div>
 </form>
+
 @endsection

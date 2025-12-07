@@ -60,6 +60,14 @@ Route::middleware('auth')->group(function () {
     Route::get('/cliente/productos', [ProductoController::class, 'catalogoCliente'])
         ->name('cliente.productos');
 
+        // Formulario para crear operador (solo admin)
+    Route::get('/admin/operadores/nuevo', [AuthController::class, 'showOperatorForm'])
+        ->name('operadores.create');
+
+    // Guardar nuevo operador (solo admin)
+    Route::post('/admin/operadores', [AuthController::class, 'storeOperator'])
+        ->name('operadores.store');
+
     // ---------------- CRUDs principales (admin / operador) ----------------
     // La validación de tipo ('admin', 'operador', 'cliente') la haces dentro
     // de cada método del controlador con auth()->user()->tipo
