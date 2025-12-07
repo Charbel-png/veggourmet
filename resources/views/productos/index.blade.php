@@ -4,17 +4,27 @@
 
 @section('content')
     <div class="d-flex justify-content-between align-items-center mb-3">
-        <h1>Productos</h1>
-        <a href="{{ route('productos.create') }}" class="btn btn-primary">Nuevo producto</a>
+        <h1 class="mb-0">Productos</h1>
+
+        {{-- Botón nuevo producto solo con ícono --}}
+        <a href="{{ route('productos.create') }}"
+           class="btn btn-primary"
+           title="Nuevo producto">
+            <i class="bi bi-plus-circle"></i>
+        </a>
     </div>
+
+    @if(session('success'))
+        <div class="alert alert-success">{{ session('success') }}</div>
+    @endif
 
     @if($productos->isEmpty())
         <p>No hay productos registrados.</p>
     @else
-        <table class="table table-striped">
+        <table class="table table-striped align-middle">
             <thead>
             <tr>
-                <th>ID</th>
+                {{-- 👇 Ya NO mostramos ID --}}
                 <th>Nombre</th>
                 <th>Categoría</th>
                 <th>Estado</th>
@@ -24,23 +34,29 @@
             <tbody>
             @foreach($productos as $producto)
                 <tr>
-                    <td>{{ $producto->id_producto }}</td>
                     <td>{{ $producto->nombre }}</td>
-                    <td>{{ $producto->categoria->nombre ?? '-' }}</td>
+                    <td>{{ $producto->categoria->nombre ?? 'Sin categoría' }}</td>
                     <td>{{ $producto->estado ? 'Activo' : 'Inactivo' }}</td>
                     <td class="text-end">
+                        {{-- Botón editar: solo ícono, texto en tooltip --}}
                         <a href="{{ route('productos.edit', $producto) }}"
-                           class="btn btn-sm btn-warning">
-                            Editar
+                           class="btn btn-warning btn-sm"
+                           title="Editar producto">
+                            <i class="bi bi-pencil-square"></i>
                         </a>
 
+                        {{-- Botón eliminar: solo ícono, texto en tooltip --}}
                         <form action="{{ route('productos.destroy', $producto) }}"
                               method="POST"
                               class="d-inline"
-                              onsubmit="return confirm('¿Eliminar este producto?')">
+                              onsubmit="return confirm('¿Seguro que deseas eliminar este producto?');">
                             @csrf
                             @method('DELETE')
-                            <button class="btn btn-sm btn-danger">Eliminar</button>
+                            <button type="submit"
+                                    class="btn btn-danger btn-sm"
+                                    title="Eliminar producto">
+                                <i class="bi bi-trash-fill"></i>
+                            </button>
                         </form>
                     </td>
                 </tr>

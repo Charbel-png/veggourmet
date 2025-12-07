@@ -36,3 +36,11 @@
         <div class="text-danger small">{{ $message }}</div>
     @enderror
 </div>
+
+<div class="mb-3">
+    <label for="imagen" class="form-label">Imagen (archivo)</label>
+    <input type="text" name="imagen" id="imagen"
+           class="form-control"
+           value="{{ old('imagen', $producto->imagen ?? '') }}">
+    <small class="text-muted">Ejemplo: ensaladas.jpg</small>
+</div>

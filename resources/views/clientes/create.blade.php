@@ -6,7 +6,7 @@
     <h1>Nuevo cliente</h1>
 
     <form action="{{ route('clientes.store') }}" method="POST">
-        @include('clientes._form')
+        @include('cliente.form')
 
         <button type="submit" class="btn btn-primary">Guardar</button>
         <a href="{{ route('clientes.index') }}" class="btn btn-secondary">Cancelar</a>

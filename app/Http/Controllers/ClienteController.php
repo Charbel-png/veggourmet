@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use App\Models\Cliente;
 use Illuminate\Http\Request;
 
@@ -10,7 +11,15 @@ class ClienteController extends Controller
     // GET /clientes
     public function index()
     {
-        $clientes = Cliente::orderBy('id_cliente', 'ASC')->paginate(10);
+        $user = auth()->user();
+        if (! in_array($user->tipo, ['admin', 'operador'])) {
+            abort(403, 'No tienes permisos para ver los clientes.');
+        }
+
+        // Solo usuarios que son clientes
+        $clientes = User::where('tipo', 'cliente')
+            ->orderBy('created_at', 'desc')
+            ->paginate(10);
 
         return view('clientes.index', compact('clientes'));
     }

@@ -14,19 +14,20 @@
         <table class="table table-striped">
             <thead>
             <tr>
-                <th>ID</th>
-                <th>Nombre completo</th>
+                <th>Nombre</th>
+                <th>Fecha de registro</th>
                 <th class="text-end">Acciones</th>
             </tr>
             </thead>
             <tbody>
             @foreach($clientes as $cliente)
                 <tr>
-                    <td>{{ $cliente->id_cliente }}</td>
                     <td>
                         {{ $cliente->nombre }}
+                        {{ $cliente->email }}
                         {{ $cliente->ap_paterno }}
                         {{ $cliente->ap_materno }}
+                        {{ optional($cliente->created_at)->format('d/m/Y') }}
                     </td>
                     <td class="text-end">
                         <a href="{{ route('clientes.edit', $cliente) }}" class="btn btn-sm btn-warning">
