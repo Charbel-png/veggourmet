@@ -27,3 +27,12 @@
            class="form-control"
            value="{{ old('ap_materno', $cliente->ap_materno ?? '') }}">
 </div>
+
+<div class="mb-3">
+    <label for="email" class="form-label">Correo electrónico</label>
+    <input type="email"
+           name="email"
+           id="email"
+           class="form-control"
+           value="{{ old('email', $cliente->email ?? '') }}">
+</div>

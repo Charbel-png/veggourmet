@@ -6,16 +6,19 @@ use Illuminate\Database\Eloquent\Model;
 
 class Inventario extends Model
 {
-    protected $table = 'inventario';
-    protected $primaryKey = 'id_producto'; // misma PK y FK
-    public $incrementing = false;          // porque también es FK
-    protected $keyType = 'int';
+    protected $table = 'inventario';      // nombre exacto de la tabla
+    protected $primaryKey = 'id_inventario';
     public $timestamps = false;
 
-    protected $fillable = ['id_producto', 'stock', 'stock_minimo'];
+    protected $fillable = [
+        'id_inventario',   // FK a productos.id_producto
+        'stock',
+        'stock_minimo',
+    ];
 
     public function producto()
     {
-        return $this->belongsTo(Producto::class, 'id_producto', 'id_producto');
+        // id_inventario → productos.id_producto
+        return $this->belongsTo(Producto::class, 'id_inventario', 'id_producto');
     }
 }

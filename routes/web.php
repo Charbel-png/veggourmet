@@ -4,7 +4,6 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ProductoController;
 use App\Http\Controllers\CategoriaController;
-use App\Http\Controllers\IngredienteController;
 use App\Http\Controllers\ProveedorController;
 use App\Http\Controllers\ClienteController;
 use App\Http\Controllers\EmpleadoController;
@@ -42,7 +41,8 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 |--------------------------------------------------------------------------
 */
 
-Route::middleware('auth')->group(function () {
+Route::middleware('auth')->group(function () 
+{
 
     // Dashboards según tipo (la lógica de tipo se valida dentro de los controladores)
     Route::get('/admin/dashboard', [ProductoController::class, 'index'])
@@ -51,7 +51,13 @@ Route::middleware('auth')->group(function () {
     Route::get('/operador/dashboard', [ProductoController::class, 'index'])
         ->name('operador.dashboard');
 
-    Route::get('/cliente/dashboard', function () {
+        Route::get('/admin/operadores/nuevo', [AuthController::class, 'showOperatorForm'])
+        ->name('operadores.create');
+    Route::post('/admin/operadores', [AuthController::class, 'storeOperator'])
+        ->name('operadores.store');
+
+    Route::get('/cliente/dashboard', function () 
+    {
         // Siempre mandamos al catálogo de productos del cliente
         return redirect()->route('cliente.productos');
     })->name('cliente.dashboard');
@@ -72,9 +78,8 @@ Route::middleware('auth')->group(function () {
     // La validación de tipo ('admin', 'operador', 'cliente') la haces dentro
     // de cada método del controlador con auth()->user()->tipo
 
-    Route::resource('productos',    ProductoController::class);
+    Route::resource('productos',    ProductoController::class)->except(['show']);
     Route::resource('categorias',   CategoriaController::class)->except(['show']);
-    Route::resource('ingredientes', IngredienteController::class);
     Route::resource('proveedores',  ProveedorController::class)->except(['show']);
     Route::resource('clientes',     ClienteController::class)->except(['show']);
     Route::resource('empleados',    EmpleadoController::class)->except(['show']);

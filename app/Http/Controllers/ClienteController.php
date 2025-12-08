@@ -79,6 +79,7 @@ class ClienteController extends Controller
             'nombre'      => 'required|string|max:100',
             'ap_paterno'  => 'nullable|string|max:100',
             'ap_materno'  => 'nullable|string|max:100',
+            'email' => 'nullable|email|max:255'
         ]);
 
         $cliente->update($data);

@@ -25,6 +25,8 @@
                     &middot; ADMIN
                 @elseif(auth()->user()->tipo === 'operador')
                     &middot; OPERADOR
+                @elseif(auth()->user()->tipo === 'cliente')
+                    &middot; CLIENTE
                 @endif
             @endauth
         </a>
@@ -51,7 +53,7 @@
 
                 {{-- Usuario autenticado --}}
                 @auth
-                    {{-- ADMIN y OPERADOR ven el menú de administración --}}
+                    {{-- ADMIN y OPERADOR ven el menú de administración principal --}}
                     @if(in_array(auth()->user()->tipo, ['admin', 'operador']))
                         <li class="nav-item">
                             <a class="nav-link" href="{{ route('productos.index') }}">Productos</a>
@@ -63,9 +65,11 @@
                             <a class="nav-link" href="{{ route('pedidos.index') }}">Pedidos</a>
                         </li>
                     @endif
+
+                    {{-- Empleados solo para ADMIN --}}
                     @if(auth()->user()->tipo === 'admin')
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ route('operadores.create') }}">Nuevo operador</a>
+                            <a class="nav-link" href="{{ route('empleados.index') }}">Empleados</a>
                         </li>
                     @endif
 
@@ -77,10 +81,10 @@
                     @endif
 
                     {{-- Botón salir --}}
-                    <li class="nav-item">
+                    <li class="nav-item ms-3">
                         <form action="{{ route('logout') }}" method="POST" class="d-inline">
                             @csrf
-                            <button type="submit" class="btn btn-link nav-link p-0">
+                            <button type="submit" class="btn btn-link nav-link px-0">
                                 Salir
                             </button>
                         </form>

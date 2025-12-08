@@ -14,5 +14,10 @@ class Cliente extends Model
         'nombre',
         'ap_paterno',
         'ap_materno',
+        'email',
     ];
+    public function pedidos()
+    {
+        return $this->hasMany(Pedido::class, 'id_cliente', 'id_cliente');
+    }
 }

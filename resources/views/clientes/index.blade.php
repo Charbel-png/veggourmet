@@ -27,7 +27,8 @@
             <thead>
             <tr>
                 {{-- 👇 NO mostramos ID --}}
-                <th>Nombre completo</th>
+                <th>Nombre</th>
+                <th>Correo</th>
                 <th class="text-end">Acciones</th>
             </tr>
             </thead>
@@ -39,6 +40,7 @@
                         {{ $cliente->ap_paterno }}
                         {{ $cliente->ap_materno }}
                     </td>
+                    <td>{{$cliente->email}}</td>
                     <td class="text-end">
                         {{-- Editar (admin + operador) --}}
                         @if(in_array(auth()->user()->tipo, ['admin','operador']))

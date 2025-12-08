@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\Producto;
 use App\Models\Categoria;
+use App\Models\Inventario;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class ProductoController extends Controller
 {
@@ -12,14 +14,14 @@ class ProductoController extends Controller
     public function index()
     {
         $user = auth()->user();
-        if (!in_array($user->tipo, ['admin', 'operador'])) {
-            abort(403, 'No tienes permisos para acceder a esta sección.');
+
+       if (! $user || ! in_array($user->tipo, ['admin', 'operador'])) {
+            abort(403, 'No tienes permisos para ver productos.');
         }
 
-        $productos = Producto::with('categoria')
-            ->where('estado', 1)          // 👈 solo activos
+        $productos = Producto::with(['categoria', 'inventario'])
             ->orderBy('nombre')
-            ->paginate(15);
+            ->paginate(20);
 
         return view('productos.index', compact('productos'));
     }
@@ -41,17 +43,36 @@ class ProductoController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'id_categoria' => 'required|exists:categorias,id_categoria', // 👈 categorias
             'nombre'       => 'required|string|max:120',
+            'id_categoria' => 'required|exists:categorias,id_categoria',
             'descripcion'  => 'nullable|string|max:255',
             'estado'       => 'required|in:0,1',
+            'descripcion'   => 'nullable|string|max:255',
+        'imagen'        => 'nullable|string|max:255',
+        'precio_venta'  => 'required|numeric|min:0',
+        'stock'         => 'required|numeric|min:0',
+        'stock_minimo'  => 'required|numeric|min:0',
         ]);
 
-        Producto::create($data);
+        DB::transaction(function () use ($data) {
+        $producto = Producto::create([
+            'nombre'       => $data['nombre'],
+            'id_categoria' => $data['id_categoria'],
+            'descripcion'  => $data['descripcion'] ?? null,
+            'imagen'       => $data['imagen'] ?? null,
+            'precio_venta' => $data['precio_venta'],
+            // 'estado' se ajusta con el trigger según el stock
+        ]);
 
-        return redirect()
-            ->route('productos.index')
-            ->with('success', 'Producto creado correctamente.');
+        Inventario::create([
+            'id_inventario' => $producto->id_producto,
+            'stock'         => $data['stock'],
+            'stock_minimo'  => $data['stock_minimo'],
+        ]);
+    });
+
+    return redirect()->route('productos.index')
+        ->with('success', 'Producto creado correctamente.');
     }
 
     // GET /productos/{producto}/edit
@@ -71,18 +92,42 @@ class ProductoController extends Controller
     // PUT /productos/{producto}
     public function update(Request $request, Producto $producto)
     {
-        $data = $request->validate([
-            'id_categoria' => 'required|exists:categorias,id_categoria', // 👈 categorias
-            'nombre'       => 'required|string|max:120',
-            'descripcion'  => 'nullable|string|max:255',
-            'estado'       => 'required|in:0,1',
+         $data = $request->validate([
+        'nombre'        => 'required|string|max:120',
+        'id_categoria'  => 'required|exists:categorias,id_categoria',
+        'descripcion'   => 'nullable|string|max:255',
+        'imagen'        => 'nullable|string|max:255',
+        'precio_venta'  => 'required|numeric|min:0',
+        'stock'         => 'required|numeric|min:0',
+        'stock_minimo'  => 'required|numeric|min:0',
+    ]);
+
+    DB::transaction(function () use ($producto, $data) {
+        $producto->update([
+            'nombre'       => $data['nombre'],
+            'id_categoria' => $data['id_categoria'],
+            'descripcion'  => $data['descripcion'] ?? null,
+            'imagen'       => $data['imagen'] ?? null,
+            'precio_venta' => $data['precio_venta'],
         ]);
 
-        $producto->update($data);
+        $inv = $producto->inventario;
+        if ($inv) {
+            $inv->update([
+                'stock'        => $data['stock'],
+                'stock_minimo' => $data['stock_minimo'],
+            ]);
+        } else {
+            Inventario::create([
+                'id_inventario' => $producto->id_producto,
+                'stock'         => $data['stock'],
+                'stock_minimo'  => $data['stock_minimo'],
+            ]);
+        }
+    });
 
-        return redirect()
-            ->route('productos.index')
-            ->with('success', 'Producto actualizado correctamente.');
+    return redirect()->route('productos.index')
+        ->with('success', 'Producto actualizado correctamente.');
     }
 
     // DELETE /productos/{producto}

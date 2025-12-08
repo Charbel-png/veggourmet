@@ -27,16 +27,4 @@ class Pedido extends Model
     {
         return $this->belongsTo(EstadoPedido::class, 'id_estado', 'id_estado');
     }
-
-    public function empleadoToma()
-    {
-        return $this->belongsTo(Empleado::class, 'id_empleado_toma', 'id_empleado');
-    }
-
-    // Productos del pedido con cantidad (tabla pedidos_detalle como pivot)
-    public function productos()
-    {
-        return $this->belongsToMany(Producto::class, 'pedidos_detalle', 'id_pedido', 'id_producto')
-                    ->withPivot('cantidad');
-    }
 }
