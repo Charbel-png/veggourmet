@@ -17,7 +17,7 @@
 
 <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm mb-4">
     <div class="container">
-        {{-- Branding según tipo de usuario --}}
+        {{-- Branding --}}
         <a class="navbar-brand fw-bold" href="{{ url('/') }}">
             VEGGOURMET
             @auth
@@ -42,18 +42,20 @@
 
                 {{-- Invitado (no ha iniciado sesión) --}}
                 @guest
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ route('login') }}">Iniciar sesión</a>
-                    </li>
-                    <li class="nav-item">
-                        {{-- Misma página de login, ancla al bloque de registro --}}
-                        <a class="nav-link" href="{{ route('login') }}#registro">Registrarse</a>
-                    </li>
+                    {{-- NO mostrar estos links si ya estamos en login o registro --}}
+                    @if (!request()->routeIs('login') && !request()->routeIs('register'))
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ route('login') }}">Iniciar sesión</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ route('register') }}">Registrarse</a>
+                        </li>
+                    @endif
                 @endguest
 
                 {{-- Usuario autenticado --}}
                 @auth
-                    {{-- ADMIN y OPERADOR ven el menú de administración principal --}}
+                    {{-- ADMIN y OPERADOR: menú de administración --}}
                     @if(in_array(auth()->user()->tipo, ['admin', 'operador']))
                         <li class="nav-item">
                             <a class="nav-link" href="{{ route('productos.index') }}">Productos</a>
@@ -66,25 +68,29 @@
                         </li>
                     @endif
 
-                    {{-- Empleados solo para ADMIN --}}
+                    {{-- Solo ADMIN: empleados y solicitudes --}}
                     @if(auth()->user()->tipo === 'admin')
                         <li class="nav-item">
                             <a class="nav-link" href="{{ route('empleados.index') }}">Empleados</a>
                         </li>
+                        <li class="nav-item">
+                            {{-- ESTE ES EL BOTÓN "Nueva solicitud" --}}
+                            <a class="nav-link" href="{{ route('admin.solicitudes') }}">Nueva solicitud</a>
+                        </li>
                     @endif
 
-                    {{-- CLIENTE solo ve su catálogo --}}
+                    {{-- CLIENTE: solo catálogo --}}
                     @if(auth()->user()->tipo === 'cliente')
                         <li class="nav-item">
                             <a class="nav-link" href="{{ route('cliente.productos') }}">Productos</a>
                         </li>
                     @endif
 
-                    {{-- Botón salir --}}
-                    <li class="nav-item ms-3">
+                    {{-- Botón Salir --}}
+                    <li class="nav-item ms-2">
                         <form action="{{ route('logout') }}" method="POST" class="d-inline">
                             @csrf
-                            <button type="submit" class="btn btn-link nav-link px-0">
+                            <button type="submit" class="btn btn-link nav-link p-0">
                                 Salir
                             </button>
                         </form>

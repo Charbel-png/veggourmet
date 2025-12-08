@@ -2,9 +2,9 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\ProductoController;
 use App\Http\Controllers\CategoriaController;
-use App\Http\Controllers\ProveedorController;
 use App\Http\Controllers\ClienteController;
 use App\Http\Controllers\EmpleadoController;
 use App\Http\Controllers\PedidoController;
@@ -22,17 +22,16 @@ Route::get('/', function () {
     return redirect()->route('login');
 });
 
-// Página de login (incluye el formulario de registro de cliente)
-Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
+// Login
+Route::get('/login',    [AuthController::class, 'showLoginForm'])->name('login');
+Route::post('/login',   [AuthController::class, 'login'])->name('login.post');
 
-// Procesar login
-Route::post('/login', [AuthController::class, 'login'])->name('login.post');
-
-// Procesar registro de cliente (el formulario está en la misma vista que login)
+// Registro (cliente / operador / admin)
+Route::get('/registro',  [AuthController::class, 'showRegisterForm'])->name('register');
 Route::post('/registro', [AuthController::class, 'register'])->name('register.post');
 
-// Cerrar sesión
-Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+// Logout
+Route::post('/logout',  [AuthController::class, 'logout'])->name('logout');
 
 
 /*
@@ -41,24 +40,16 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 |--------------------------------------------------------------------------
 */
 
-Route::middleware('auth')->group(function () 
-{
+Route::middleware(['auth'])->group(function () {
 
-    // Dashboards según tipo (la lógica de tipo se valida dentro de los controladores)
-    Route::get('/admin/dashboard', [ProductoController::class, 'index'])
-        ->name('admin.dashboard');
+    // ---------------- Dashboards ----------------
 
-    Route::get('/operador/dashboard', [ProductoController::class, 'index'])
-        ->name('operador.dashboard');
+    // Admin / Operador -> usan el mismo controlador (por ahora ProductoController@index)
+    Route::get('/admin/dashboard',    [ProductoController::class, 'index'])->name('admin.dashboard');
+    Route::get('/operador/dashboard', [ProductoController::class, 'index'])->name('operador.dashboard');
 
-        Route::get('/admin/operadores/nuevo', [AuthController::class, 'showOperatorForm'])
-        ->name('operadores.create');
-    Route::post('/admin/operadores', [AuthController::class, 'storeOperator'])
-        ->name('operadores.store');
-
-    Route::get('/cliente/dashboard', function () 
-    {
-        // Siempre mandamos al catálogo de productos del cliente
+    // Cliente -> siempre mandamos al catálogo
+    Route::get('/cliente/dashboard', function () {
         return redirect()->route('cliente.productos');
     })->name('cliente.dashboard');
 
@@ -66,29 +57,34 @@ Route::middleware('auth')->group(function ()
     Route::get('/cliente/productos', [ProductoController::class, 'catalogoCliente'])
         ->name('cliente.productos');
 
-        // Formulario para crear operador (solo admin)
-    Route::get('/admin/operadores/nuevo', [AuthController::class, 'showOperatorForm'])
-        ->name('operadores.create');
 
-    // Guardar nuevo operador (solo admin)
-    Route::post('/admin/operadores', [AuthController::class, 'storeOperator'])
-        ->name('operadores.store');
+    // ---------------- Solicitudes de acceso (solo admin) ----------------
+    // La validación de que sea admin la haces dentro de AdminUserController
 
-    // ---------------- CRUDs principales (admin / operador) ----------------
-    // La validación de tipo ('admin', 'operador', 'cliente') la haces dentro
-    // de cada método del controlador con auth()->user()->tipo
+    Route::get('/admin/solicitudes', [AdminUserController::class, 'index'])
+        ->name('admin.solicitudes');
 
-    Route::resource('productos',    ProductoController::class)->except(['show']);
-    Route::resource('categorias',   CategoriaController::class)->except(['show']);
-    Route::resource('proveedores',  ProveedorController::class)->except(['show']);
-    Route::resource('clientes',     ClienteController::class)->except(['show']);
-    Route::resource('empleados',    EmpleadoController::class)->except(['show']);
+    Route::post('/admin/solicitudes/{user}/aprobar', [AdminUserController::class, 'aprobar'])
+        ->name('admin.solicitudes.aprobar');
+
+    Route::post('/admin/solicitudes/{user}/rechazar', [AdminUserController::class, 'rechazar'])
+        ->name('admin.solicitudes.rechazar');
+
+
+    // ---------------- CRUDs principales ----------------
+
+    Route::resource('productos',  ProductoController::class)->except(['show']);
+    Route::resource('categorias', CategoriaController::class)->except(['show']);
+    Route::resource('clientes',   ClienteController::class)->except(['show']);
+    Route::resource('empleados',  EmpleadoController::class)->except(['show']);
 
     // Movimientos
     Route::resource('pedidos', PedidoController::class);
     Route::resource('compras', CompraController::class);
 
+
     // ---------------- Recetas por producto (rutas anidadas) ----------------
+
     Route::prefix('productos/{producto}')->group(function () {
         Route::get('recetas',                    [RecetaController::class, 'index'])->name('recetas.index');
         Route::get('recetas/create',             [RecetaController::class, 'create'])->name('recetas.create');

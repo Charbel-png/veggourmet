@@ -27,11 +27,7 @@ class EmpleadoController extends Controller
     // GET /empleados/create
     public function create()
     {
-        $user = auth()->user();
-
-        if (! $user || $user->tipo !== 'admin') {
-            abort(403);
-        }
+        $this->authorize('admin-only'); // o la lógica que uses
 
         $puestos = Puesto::orderBy('nombre')->get();
 
