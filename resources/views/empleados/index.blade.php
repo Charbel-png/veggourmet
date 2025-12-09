@@ -1,69 +1,69 @@
-@extends('layouts.app')
+@extends('layouts.panel')
 
 @section('title', 'Empleados')
 
 @section('content')
-<div class="d-flex justify-content-between align-items-center mb-3">
+<div class="d-flex align-items-center mb-3">
     <h1 class="h3 mb-0">Empleados</h1>
-
-    <a href="{{ route('empleados.create') }}" class="btn btn-primary" title="Nuevo empleado / operador">
-        <i class="bi bi-plus-lg"></i>
-    </a>
 </div>
 
-@if(session('success'))
-    <div class="alert alert-success">{{ session('success') }}</div>
-@endif
-
 <div class="card shadow-sm border-0">
-    <div class="card-body table-responsive">
-        <table class="table align-middle mb-0">
-            <thead>
-                <tr>
-                    <th>Nombre</th>
-                    <th>Correo</th>
-                    <th>Puesto</th>
-                    <th class="text-end">Acciones</th>
-                </tr>
-            </thead>
-            <tbody>
+    <div class="card-header d-flex justify-content-between align-items-center bg-white">
+        <span class="fw-semibold">Listado de empleados</span>
+        <a href="{{ route('empleados.create') }}" class="btn btn-success btn-sm">
+            <i class="bi bi-plus-lg"></i>
+        </a>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Correo</th>
+                        <th>Puesto</th>
+                        <th class="text-end">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
                 @forelse($empleados as $empleado)
                     <tr>
                         <td>{{ $empleado->nombre }}</td>
-                        <td>{{ $empleado->email }}</td>
-                        <td>{{ optional($empleado->puesto)->nombre }}</td>
+                        <td>{{ $empleado->correo }}</td>
+                        <td>
+                            {{-- solo nombre del puesto --}}
+                            @if(method_exists($empleado, 'puesto') && $empleado->puesto)
+                                {{ $empleado->puesto->nombre }}
+                            @else
+                                {{ $empleado->puesto ?? 'Sin puesto' }}
+                            @endif
+                        </td>
                         <td class="text-end">
                             <a href="{{ route('empleados.edit', $empleado) }}"
-                               class="btn btn-sm btn-warning"
-                               title="Editar">
+                               class="btn btn-outline-primary btn-sm">
                                 <i class="bi bi-pencil-square"></i>
                             </a>
-
                             <form action="{{ route('empleados.destroy', $empleado) }}"
-                                  method="POST"
-                                  class="d-inline"
-                                  onsubmit="return confirm('¿Eliminar este empleado?');">
-                                @csrf
-                                @method('DELETE')
-                                <button class="btn btn-sm btn-danger" title="Eliminar">
-                                    <i class="bi bi-trash-fill"></i>
+                                  method="POST" class="d-inline">
+                                @csrf @method('DELETE')
+                                <button type="submit"
+                                        class="btn btn-outline-danger btn-sm"
+                                        onclick="return confirm('¿Eliminar empleado?')">
+                                    <i class="bi bi-trash"></i>
                                 </button>
                             </form>
                         </td>
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="4" class="text-center text-muted">
+                        <td colspan="4" class="text-center text-muted py-4">
                             No hay empleados registrados.
                         </td>
                     </tr>
                 @endforelse
-            </tbody>
-        </table>
+                </tbody>
+            </table>
+        </div>
     </div>
-</div>
-
-<div class="mt-3">
-    {{ $empleados->links() }}
 </div>
 @endsection

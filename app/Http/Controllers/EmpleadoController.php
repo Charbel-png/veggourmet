@@ -19,7 +19,7 @@ class EmpleadoController extends Controller
             abort(403, 'Solo el admin puede ver empleados.');
         }
 
-        $empleados = Empleado::with('puesto')->orderBy('nombre')->paginate(15);
+        $empleados = Empleado::with('puesto')->orderBy('nombre')->get();
 
         return view('empleados.index', compact('empleados'));
     }

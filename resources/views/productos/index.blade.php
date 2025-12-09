@@ -1,90 +1,95 @@
-@extends('layouts.app')
+@extends('layouts.panel')
 
 @section('title', 'Productos')
 
 @section('content')
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h1 class="h3 mb-0">Productos</h1>
-
-        @if(in_array(auth()->user()->tipo, ['admin', 'operador']))
-            <a href="{{ route('productos.create') }}"
-               class="btn btn-primary"
-               title="Nuevo producto">
-                <i class="bi bi-plus-lg"></i>
-            </a>
-        @endif
-    </div>
+    <h1 class="h4 mb-3">Productos</h1>
 
     @if(session('success'))
-        <div class="alert alert-success">{{ session('success') }}</div>
+        <div class="alert alert-success py-2">
+            {{ session('success') }}
+        </div>
     @endif
 
-    @if($productos->isEmpty())
-        <p>No hay productos registrados.</p>
-    @else
-        <div class="card shadow-sm border-0">
-            <div class="card-body table-responsive">
-                <table class="table table-striped align-middle mb-0">
-                    <thead>
-                    <tr>
-                        {{-- Sin ID --}}
-                        <th>Nombre</th>
-                        <th>Categoría</th>
-                        <th>Existencia</th>
-                        <th>Stock mínimo</th>
-                        <th>Precio venta</th>
-                        <th>Estado</th>
-                        <th class="text-end">Acciones</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    @foreach($productos as $producto)
-                        @php
-                            $inv = $producto->inventario;
-                        @endphp
-                        <tr>
-                            <td>{{ $producto->nombre }}</td>
-                            <td>{{ $producto->categoria->nombre ?? 'Sin categoría' }}</td>
-                            <td>{{ $inv->stock ?? 0 }}</td>
-                            <td>{{ $inv->stock_minimo ?? 0 }}</td>
-                            <td>${{ number_format($producto->precio_venta, 2) }}</td>
-                            <td>{{ $producto->estado ? 'Activo' : 'Inactivo' }}</td>
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
 
-                            <td class="text-end">
-                                {{-- Editar: icono solo --}}
-                                @if(in_array(auth()->user()->tipo, ['admin','operador']))
-                                    <a href="{{ route('productos.edit', $producto) }}"
-                                       class="btn btn-warning btn-sm me-1"
-                                       title="Editar producto">
-                                        <i class="bi bi-pencil-square"></i>
-                                    </a>
-                                @endif
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="card-title mb-0">Listado de productos</h5>
 
-                                {{-- Eliminar solo para admin, icono solo --}}
-                                @if(auth()->user()->tipo === 'admin')
-                                    <form action="{{ route('productos.destroy', $producto) }}"
-                                          method="POST"
-                                          class="d-inline"
-                                          onsubmit="return confirm('¿Seguro que deseas eliminar este producto?');">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit"
-                                                class="btn btn-danger btn-sm"
-                                                title="Eliminar producto">
-                                            <i class="bi bi-trash-fill"></i>
-                                        </button>
-                                    </form>
-                                @endif
-                            </td>
-                        </tr>
-                    @endforeach
-                    </tbody>
-                </table>
+                @if(in_array(auth()->user()->tipo, ['admin', 'operador']))
+                    <a href="{{ route('productos.create') }}"
+                       class="btn btn-success btn-sm"
+                       title="Nuevo producto">
+                        <i class="bi bi-plus-lg"></i>
+                    </a>
+                @endif
             </div>
-        </div>
 
-        <div class="mt-3">
-            {{ $productos->links() }}
+            @if($productos->isEmpty())
+                <p class="text-muted mb-0">Aún no hay productos registrados.</p>
+            @else
+                <div class="table-responsive">
+                    <table class="table align-middle table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Nombre</th>
+                                <th>Categoría</th>
+                                <th class="text-center">Stock</th>
+                                <th class="text-center">Stock mínimo</th>
+                                <th class="text-center">Estado</th>
+                                <th class="text-end">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($productos as $producto)
+                                <tr>
+                                    <td>{{ $producto->nombre }}</td>
+                                    <td>{{ $producto->categoria->nombre ?? 'Sin categoría' }}</td>
+                                    <td class="text-center">
+                                        {{ optional($producto->inventario)->stock ?? 0 }}
+                                    </td>
+                                    <td class="text-center">
+                                        {{ optional($producto->inventario)->stock_minimo ?? 0 }}
+                                    </td>
+                                    <td class="text-center">
+                                        {{ $producto->estado == 1 ? 'Activo' : 'Inactivo' }}
+                                    </td>
+                                    <td class="text-end">
+                                        @if(in_array(auth()->user()->tipo, ['admin', 'operador']))
+                                            {{-- Editar --}}
+                                            <a href="{{ route('productos.edit', $producto) }}"
+                                               class="btn btn-sm btn-outline-primary me-1"
+                                               title="Editar">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+
+                                            {{-- Eliminar --}}
+                                            <form action="{{ route('productos.destroy', $producto) }}"
+                                                  method="POST"
+                                                  class="d-inline"
+                                                  onsubmit="return confirm('¿Eliminar este producto?');">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit"
+                                                        class="btn btn-sm btn-outline-danger"
+                                                        title="Eliminar">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </form>
+                                        @endif
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+
+                {{-- Paginación simple, sin texto "Showing 1 to..." --}}
+                <div class="mt-3 d-flex justify-content-center">
+                    {{ $productos->links('pagination::simple-bootstrap-5') }}
+                </div>
+            @endif
         </div>
-    @endif
+    </div>
 @endsection

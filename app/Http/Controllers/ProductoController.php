@@ -147,13 +147,14 @@ class ProductoController extends Controller
     }
     public function catalogoCliente()
     {
-        $user = auth()->user();
-        if ($user->tipo !== 'cliente') {
-            abort(403, 'No tienes permisos para ver el catálogo de cliente.');
-        }
+        $productos = Producto::with(['categoria', 'inventario'])
+            ->where('estado', 'activo')
+            ->orderBy('nombre')
+            ->get();
 
-        $productos = Producto::where('estado', 1)->paginate(12);
+        $cart  = session('cart', []);
+        $total = collect($cart)->sum(fn($item) => $item['precio'] * $item['cantidad']);
 
-        return view('clientes.productos', compact('productos'));
+        return view('cliente.productos', compact('productos', 'cart', 'total'));
     }
 }

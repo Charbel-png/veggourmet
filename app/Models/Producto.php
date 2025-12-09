@@ -11,12 +11,13 @@ class Producto extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'id_categoria',
         'nombre',
+        'id_categoria',
         'descripcion',
+        'precio_venta',
         'imagen',
-        'precio_venta',   // si ya agregaste esta columna
         'estado',
+        // lo que tengas en tu tabla productos…
     ];
 
     public function categoria()
@@ -26,7 +27,7 @@ class Producto extends Model
 
     public function inventario()
     {
-        // 1 producto tiene 1 registro en inventario
-        return $this->hasOne(Inventario::class, 'id_inventario', 'id_producto');
+        // Un producto tiene UN registro de inventario
+        return $this->hasOne(Inventario::class, 'id_producto', 'id_producto');
     }
 }

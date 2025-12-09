@@ -4,28 +4,28 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Receta extends Model
+class PedidoDetalle extends Model
 {
-    protected $table = 'recetas';
+    protected $table = 'pedidos_detalle';
     public $timestamps = false;
 
-    protected $fillable = [
-        'id_producto',
-        'id_ingrediente',
-        'cantidad',
-    ];
-
-    // No hay id autoincremental
+    // La tabla no tiene PK autoincremental
     protected $primaryKey = null;
     public $incrementing = false;
+
+    protected $fillable = [
+        'id_pedido',
+        'id_producto',
+        'cantidad',
+    ];
 
     public function producto()
     {
         return $this->belongsTo(Producto::class, 'id_producto', 'id_producto');
     }
 
-    public function ingrediente()
+    public function pedido()
     {
-        return $this->belongsTo(Ingrediente::class, 'id_ingrediente', 'id_ingrediente');
+        return $this->belongsTo(Pedido::class, 'id_pedido', 'id_pedido');
     }
 }

@@ -18,11 +18,13 @@ class PedidoController extends Controller
             abort(403, 'No tienes permisos para ver pedidos.');
         }
 
-        $pedidos = Pedido::with(['cliente', 'estado'])
-            ->orderByDesc('fecha')
-            ->paginate(15);
+        $this->ensureAdminOperador(); // o comenta esto si también quieres que cliente vea aquí
 
-        return view('pedidos.index', compact('pedidos'));
+    $pedidos = Pedido::with('cliente')
+        ->orderByDesc('fecha')
+        ->paginate(20);
+
+    return view('pedidos.index', compact('pedidos'));
     }
 
     // GET /pedidos/create
@@ -33,6 +35,8 @@ class PedidoController extends Controller
         if (! $user || ! in_array($user->tipo, ['admin', 'operador'])) {
             abort(403, 'No tienes permisos para crear pedidos.');
         }
+
+        $this->ensureSoloCliente();
 
         $clientes = Cliente::orderBy('nombre')->get();
         $estados  = EstadoPedido::orderBy('nombre')->get();
@@ -51,6 +55,8 @@ class PedidoController extends Controller
         if (! $user || ! in_array($user->tipo, ['admin', 'operador'])) {
             abort(403);
         }
+
+        $this->ensureSoloCliente();
 
         $request->validate([
             'id_cliente' => 'nullable|exists:clientes,id_cliente',
@@ -80,6 +86,8 @@ class PedidoController extends Controller
         if (! $user || ! in_array($user->tipo, ['admin', 'operador'])) {
             abort(403);
         }
+
+        $this->ensureSoloCliente();
 
         $clientes = Cliente::orderBy('nombre')->get();
         $estados  = EstadoPedido::orderBy('nombre')->get();
@@ -125,9 +133,63 @@ class PedidoController extends Controller
             abort(403);
         }
 
-        $pedido->delete();
+        $this->ensureAdminOperador();
 
-        return redirect()->route('pedidos.index')
-            ->with('success', 'Pedido eliminado correctamente.');
+    $pedido->delete();
+
+    return back()->with('success', 'Pedido eliminado correctamente.');
+    }
+
+    protected function ensureSoloCliente()
+    {
+        if (auth()->user()->tipo !== 'cliente') {
+            abort(403, 'Solo los clientes pueden crear o modificar pedidos.');
+        }
+    }
+
+    protected function ensureAdminOperador()
+    {
+        if (!in_array(auth()->user()->tipo, ['admin', 'operador'])) {
+            abort(403, 'Solo el personal del restaurante puede gestionar pedidos.');
+        }
+    }
+    public function show($id)
+    {
+        $user = auth()->user();
+
+        // Base de la consulta: pedido + cliente + estado + detalles con producto
+        $query = Pedido::with([
+            'cliente',
+            'estado',
+            'detalles.producto',
+        ])->where('id_pedido', $id);
+
+        // Reglas de acceso:
+        //  - admin / operador: pueden ver cualquier pedido
+        //  - cliente: solo sus propios pedidos
+        if ($user->tipo === 'cliente') {
+            // Ajusta este campo si tu User está ligado de otra forma al cliente
+            $clienteId = $user->id_cliente ?? null;
+            $query->where('id_cliente', $clienteId);
+        }
+
+        $pedido = $query->firstOrFail();
+
+        // Cálculo de totales (usando precio_venta del producto)
+        $subtotal = 0;
+
+        foreach ($pedido->detalles as $detalle) {
+            $precio = $detalle->producto->precio_venta ?? 0;
+            $importe = (float) $detalle->cantidad * (float) $precio;
+
+            // Propiedad "virtual" solo para la vista
+            $detalle->importe_calculado = $importe;
+
+            $subtotal += $importe;
+        }
+
+        $total = $subtotal; // aquí luego podrías sumar IVA o descuentos
+
+        return view('pedidos.show', compact('pedido', 'subtotal', 'total'));
     }
 }

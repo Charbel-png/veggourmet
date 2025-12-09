@@ -15,7 +15,6 @@ class AuthController extends Controller
         return view('auth.login');
     }
 
-    // Procesar login
     public function login(Request $request)
     {
         $request->validate([
@@ -35,7 +34,6 @@ class AuthController extends Controller
         /** @var \App\Models\User $user */
         $user = Auth::user();
 
-        // Si no está aprobado, lo sacamos
         if ($user->estado !== 'aprobado') {
             Auth::logout();
 
@@ -44,7 +42,6 @@ class AuthController extends Controller
                 ->withInput($request->only('email'));
         }
 
-        // Redirección según rol
         if (in_array($user->tipo, ['admin', 'operador'])) {
             return redirect()->route('admin.dashboard');
         }
@@ -53,7 +50,6 @@ class AuthController extends Controller
             return redirect()->route('cliente.dashboard');
         }
 
-        // fallback
         return redirect()->route('login');
     }
 
@@ -62,7 +58,6 @@ class AuthController extends Controller
         return view('auth.register');
     }
 
-    // Procesar registro de cliente
     public function register(Request $request)
     {
         $request->validate([
@@ -82,7 +77,6 @@ class AuthController extends Controller
 
         $nombreCompleto = trim($request->nombre . ' ' . $request->apellidos);
 
-        // Cliente se aprueba de inmediato, admin/operador quedan pendientes
         $estado = $request->tipo === 'cliente' ? 'aprobado' : 'pendiente';
 
         $user = User::create([
@@ -93,7 +87,6 @@ class AuthController extends Controller
             'estado'   => $estado,
         ]);
 
-        // Si es cliente, creamos también el registro en la tabla clientes
         if ($user->tipo === 'cliente') {
 
             [$apPaterno, $apMaterno] = array_pad(
@@ -107,22 +100,17 @@ class AuthController extends Controller
                 'apellido_paterno' => $apPaterno,
                 'apellido_materno' => $apMaterno,
                 'email'            => $request->email,
-                // ajusta si tienes más campos obligatorios
             ]);
 
-            // ⬇️ AQUÍ CAMBIAMOS: YA NO SE HACE LOGIN AUTOMÁTICO
             return redirect()
                 ->route('login')
                 ->with('success', 'Tu cuenta de cliente se registró correctamente. Ahora puedes iniciar sesión.');
         }
 
-        // Admin / operador: quedan pendientes, sin login automático
         return redirect()
             ->route('login')
             ->with('success', 'Tu solicitud se registró. Un administrador debe aprobar tu cuenta antes de que puedas iniciar sesión.');
     }
-
-    // -------- LOGOUT --------
 
     public function logout(Request $request)
     {
@@ -132,6 +120,7 @@ class AuthController extends Controller
 
         return redirect()->route('login');
     }
+    
     public function showOperatorForm()
     {
         $user = auth()->user();

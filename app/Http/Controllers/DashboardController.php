@@ -2,40 +2,64 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Producto;
-use App\Models\Inventario;
-use App\Models\Pedido;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('auth');
+    }
+
     public function index()
     {
-        $user = auth()->user();
+        $user = Auth::user();
 
-        if (! $user || ! in_array($user->tipo, ['admin', 'operador'])) {
-            abort(403, 'No tienes permisos para ver el dashboard.');
+        // ADMIN y OPERADOR ven el dashboard
+        if (in_array($user->tipo, ['admin', 'operador'])) {
+            $data = $this->buildDashboard();     // <─ ahora sí existe
+            return view('dashboard.index', $data);
         }
 
-        // Métricas sencillas (puedes refinarlas después)
-        $totalProductos         = Producto::count();
-        $totalPedidos           = Pedido::count();
-        $productosStockBajo     = Inventario::whereColumn('stock', '<', 'stock_minimo')->count();
+        // CLIENTE se va a su catálogo
+        if ($user->tipo === 'cliente') {
+            return redirect()->route('cliente.productos');
+        }
 
-        // Lista de productos con menos stock (simula "próximos a caducar")
-        $proximos = Inventario::with('producto')
-            ->orderBy('stock', 'asc')
-            ->take(5)
+        abort(403);
+    }
+
+    /**
+     * Arma todos los datos que necesita el panel.
+     */
+    protected function buildDashboard(): array
+    {
+        // Tarjetas de resumen
+        $productosTotal = DB::table('productos')->count();
+        $clientesTotal  = DB::table('clientes')->count();
+        $pedidosTotal   = DB::table('pedidos')->count();
+
+        // Productos con menor stock (un collection, NO un count)
+        $productosMenorStock = DB::table('productos')
+            ->join('inventario', 'productos.id_producto', '=', 'inventario.id_inventario')
+            ->select(
+                'productos.id_producto',
+                'productos.nombre',
+                'inventario.stock',
+                'inventario.stock_minimo'
+            )
+            ->orderBy('inventario.stock', 'asc')
+            ->limit(5)
             ->get();
 
-        $ingresosHoy = 0; // placeholder, luego lo puedes calcular con montos de pedidos
-
-        return view('admin.dashboard', compact(
-            'user',
-            'totalProductos',
-            'totalPedidos',
-            'productosStockBajo',
-            'proximos',
-            'ingresosHoy'
-        ));
+        return [
+            // nombres que usará la vista
+            'totalProductos'     => $productosTotal,
+            'totalClientes'      => $clientesTotal,
+            'totalPedidos'       => $pedidosTotal,
+            'productosMenorStock'=> $productosMenorStock,
+        ];
     }
 }

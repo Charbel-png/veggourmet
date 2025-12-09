@@ -3,6 +3,8 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AdminUserController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\CartController;
 use App\Http\Controllers\ProductoController;
 use App\Http\Controllers\CategoriaController;
 use App\Http\Controllers\ClienteController;
@@ -23,44 +25,63 @@ Route::get('/', function () {
 });
 
 // Login
-Route::get('/login',    [AuthController::class, 'showLoginForm'])->name('login');
-Route::post('/login',   [AuthController::class, 'login'])->name('login.post');
+Route::get('/login',  [AuthController::class, 'showLoginForm'])->name('login');
+Route::post('/login', [AuthController::class, 'login'])->name('login.post');
 
 // Registro (cliente / operador / admin)
 Route::get('/registro',  [AuthController::class, 'showRegisterForm'])->name('register');
 Route::post('/registro', [AuthController::class, 'register'])->name('register.post');
 
 // Logout
-Route::post('/logout',  [AuthController::class, 'logout'])->name('logout');
-
+Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 /*
 |--------------------------------------------------------------------------
-| Rutas protegidas (requieren estar autenticado)
+| Rutas protegidas (requieren autenticación)
 |--------------------------------------------------------------------------
 */
-
 Route::middleware(['auth'])->group(function () {
 
-    // ---------------- Dashboards ----------------
-
-    // Admin / Operador -> usan el mismo controlador (por ahora ProductoController@index)
-    Route::get('/admin/dashboard',    [ProductoController::class, 'index'])->name('admin.dashboard');
-    Route::get('/operador/dashboard', [ProductoController::class, 'index'])->name('operador.dashboard');
+    // --------- Dashboards ---------
+    // Admin y operador usan el mismo método, el controlador decide según el tipo
+    Route::get('/admin/dashboard',    [DashboardController::class, 'index'])->name('admin.dashboard');
+    Route::get('/operador/dashboard', [DashboardController::class, 'index'])->name('operador.dashboard');
 
     // Cliente -> siempre mandamos al catálogo
     Route::get('/cliente/dashboard', function () {
         return redirect()->route('cliente.productos');
     })->name('cliente.dashboard');
 
+    // --------- Catálogo y carrito de cliente ---------
+
     // Catálogo de productos para cliente
-    Route::get('/cliente/productos', [ProductoController::class, 'catalogoCliente'])
-        ->name('cliente.productos');
+    Route::get(
+        '/cliente/productos',
+        [ProductoController::class, 'catalogoCliente']
+    )->name('cliente.productos');
 
+    // Carrito del cliente
+    Route::get(
+        '/cliente/carrito',
+        [CartController::class, 'index']
+    )->name('cart.index');
 
-    // ---------------- Solicitudes de acceso (solo admin) ----------------
-    // La validación de que sea admin la haces dentro de AdminUserController
+    Route::post(
+        '/cliente/carrito/agregar/{producto}',
+        [CartController::class, 'add']
+    )->name('cliente.carrito.add');
 
+    Route::post(
+        '/cliente/carrito/eliminar/{producto}',
+        [CartController::class, 'remove']
+    )->name('cliente.carrito.remove');
+
+    Route::post(
+        '/cliente/carrito/vaciar',
+        [CartController::class, 'clear']
+    )->name('cliente.carrito.clear');
+
+    // --------- Solicitudes de acceso (solo admin, se valida en el controlador) ---------
     Route::get('/admin/solicitudes', [AdminUserController::class, 'index'])
         ->name('admin.solicitudes');
 
@@ -70,9 +91,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/admin/solicitudes/{user}/rechazar', [AdminUserController::class, 'rechazar'])
         ->name('admin.solicitudes.rechazar');
 
-
-    // ---------------- CRUDs principales ----------------
-
+    // --------- CRUDs principales ---------
     Route::resource('productos',  ProductoController::class)->except(['show']);
     Route::resource('categorias', CategoriaController::class)->except(['show']);
     Route::resource('clientes',   ClienteController::class)->except(['show']);
@@ -82,9 +101,7 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('pedidos', PedidoController::class);
     Route::resource('compras', CompraController::class);
 
-
-    // ---------------- Recetas por producto (rutas anidadas) ----------------
-
+    // --------- Recetas por producto (rutas anidadas) ---------
     Route::prefix('productos/{producto}')->group(function () {
         Route::get('recetas',                    [RecetaController::class, 'index'])->name('recetas.index');
         Route::get('recetas/create',             [RecetaController::class, 'create'])->name('recetas.create');

@@ -1,47 +1,40 @@
-@extends('layouts.app')
+@extends('layouts.panel')
 
 @section('title', 'Categorías')
 
 @section('content')
 <div class="d-flex justify-content-between align-items-center mb-3">
-    <h1 class="mb-0">Categorías</h1>
-
-    @if(auth()->user()->tipo === 'admin')
-        <a href="{{ route('categorias.create') }}"
-           class="btn btn-success"
-           title="Nueva categoría">
-            <i class="bi bi-plus-lg"></i>
-        </a>
-    @endif
+    <div>
+        <h1 class="h3 mb-0">Categorías</h1>
+        <small class="text-muted">Clasificación de los productos.</small>
+    </div>
 </div>
 
-@if(session('success'))
-    <div class="alert alert-success">{{ session('success') }}</div>
-@endif
+<div class="card shadow-sm border-0">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Listado de categorías</h5>
+        <a href="{{ route('categorias.create') }}" class="btn btn-success btn-sm" title="Nueva categoría">
+            <i class="bi bi-plus-lg"></i>
+        </a>
+    </div>
 
-<div class="card shadow-sm">
     <div class="card-body p-0">
-        <table class="table mb-0 align-middle">
-            <thead>
-                <tr>
-                    {{-- No mostramos ID --}}
-                    <th>Nombre</th>
-                    <th>Descripción</th>
-                    @if(auth()->user()->tipo === 'admin')
-                        <th class="text-end">Acciones</th>
-                    @endif
-                </tr>
-            </thead>
-            <tbody>
-                @forelse($categorias as $categoria)
+        <div class="table-responsive">
+            <table class="table mb-0 align-middle">
+                <thead class="table-light">
                     <tr>
-                        <td>{{ $categoria->nombre }}</td>
-                        <td>{{ $categoria->descripcion }}</td>
-                        @if(auth()->user()->tipo === 'admin')
+                        <th>NOMBRE</th>
+                        <th class="text-end">ACCIONES</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($categorias as $categoria)
+                        <tr>
+                            <td>{{ $categoria->nombre }}</td>
                             <td class="text-end">
                                 <a href="{{ route('categorias.edit', $categoria) }}"
-                                   class="btn btn-sm btn-warning"
-                                   title="Editar categoría">
+                                   class="btn btn-outline-primary btn-sm"
+                                   title="Editar">
                                     <i class="bi bi-pencil-square"></i>
                                 </a>
 
@@ -52,29 +45,23 @@
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit"
-                                            class="btn btn-sm btn-danger"
-                                            title="Eliminar categoría">
-                                        <i class="bi bi-trash3-fill"></i>
+                                            class="btn btn-outline-danger btn-sm"
+                                            title="Eliminar">
+                                        <i class="bi bi-trash"></i>
                                     </button>
                                 </form>
                             </td>
-                        @endif
-                    </tr>
-                @empty
-                    <tr>
-                        <td colspan="3" class="text-center py-4">
-                            No hay categorías registradas.
-                        </td>
-                    </tr>
-                @endforelse
-            </tbody>
-        </table>
-    </div>
-
-    @if($categorias->hasPages())
-        <div class="card-footer">
-            {{ $categorias->links() }}
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="2" class="text-center text-muted py-4">
+                                No hay categorías registradas.
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
         </div>
-    @endif
+    </div>
 </div>
 @endsection

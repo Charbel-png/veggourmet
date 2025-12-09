@@ -25,6 +25,12 @@ class Pedido extends Model
 
     public function estado()
     {
-        return $this->belongsTo(EstadoPedido::class, 'id_estado', 'id_estado');
+       return $this->belongsTo(EstadoPedido::class, 'id_estado', 'id_estado');
+    // o el nombre de tu modelo de estados
+    }
+
+    public function detalles()
+    {
+        return $this->hasMany(PedidoDetalle::class, 'id_pedido', 'id_pedido');
     }
 }

@@ -1,78 +1,56 @@
-@extends('layouts.app')
+@extends('layouts.panel')
 
 @section('title', 'Nuevo empleado')
 
 @section('content')
-<h1 class="h3 mb-3">Nuevo empleado / operador</h1>
+    <h1 class="h4 mb-3">Nuevo empleado</h1>
 
-@if($errors->any())
-    <div class="alert alert-danger">
-        <ul class="mb-0">
-            @foreach($errors->all() as $error)
-                <li>{{ $error }}</li>
-            @endforeach
-        </ul>
-    </div>
-@endif
+    @if($errors->any())
+        <div class="alert alert-danger">
+            <ul class="mb-0">
+                @foreach($errors->all() as $error)
+                    <li class="small">{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
 
-<div class="card shadow-sm border-0">
-    <div class="card-body">
-        <form action="{{ route('empleados.store') }}" method="POST">
-            @csrf
+    <form action="{{ route('empleados.store') }}" method="POST">
+        @csrf
 
-            <div class="mb-3">
-                <label for="nombre" class="form-label">Nombre completo</label>
-                <input type="text" name="nombre" id="nombre"
-                       class="form-control"
-                       value="{{ old('nombre') }}">
+        <div class="row mb-3">
+            <div class="col-md-4">
+                <label class="form-label">Nombre *</label>
+                <input type="text" name="nombre" class="form-control" required>
             </div>
-
-            <div class="mb-3">
-                <label for="email" class="form-label">Correo electrónico</label>
-                <input type="email" name="email" id="email"
-                       class="form-control"
-                       value="{{ old('email') }}">
+            <div class="col-md-4">
+                <label class="form-label">Apellido paterno *</label>
+                <input type="text" name="apellido_paterno" class="form-control" required>
             </div>
+            <div class="col-md-4">
+                <label class="form-label">Apellido materno</label>
+                <input type="text" name="apellido_materno" class="form-control">
+            </div>
+        </div>
 
-            <div class="mb-3">
-                <label for="id_puesto" class="form-label">Puesto</label>
-                <select name="id_puesto" id="id_puesto" class="form-select">
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <label class="form-label">Correo electrónico *</label>
+                <input type="email" name="email" class="form-control" required>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Puesto *</label>
+                <select name="id_puesto" class="form-select" required>
+                    <option value="">Seleccione un puesto</option>
                     @foreach($puestos as $puesto)
-                        <option value="{{ $puesto->id_puesto }}"
-                            @selected(old('id_puesto') == $puesto->id_puesto)>
-                            {{ $puesto->nombre }}
-                        </option>
+                        <option value="{{ $puesto->id_puesto }}">{{ $puesto->nombre }}</option>
                     @endforeach
                 </select>
             </div>
+        </div>
 
-            <hr>
-
-            <p class="fw-bold mb-2">
-                Datos de acceso (el empleado será operador):
-            </p>
-
-            <div class="mb-3">
-                <label for="password" class="form-label">Contraseña</label>
-                <input type="password" name="password" id="password"
-                       class="form-control">
-            </div>
-
-            <div class="mb-3">
-                <label for="password_confirmation" class="form-label">Confirmar contraseña</label>
-                <input type="password" name="password_confirmation"
-                       id="password_confirmation" class="form-control">
-            </div>
-
-            <div class="d-flex gap-2">
-                <button type="submit" class="btn btn-success" title="Guardar">
-                    <i class="bi bi-check-lg"></i>
-                </button>
-                <a href="{{ route('empleados.index') }}" class="btn btn-secondary" title="Cancelar">
-                    <i class="bi bi-x-lg"></i>
-                </a>
-            </div>
-        </form>
-    </div>
-</div>
+        <button class="btn btn-success">
+            Guardar empleado
+        </button>
+    </form>
 @endsection

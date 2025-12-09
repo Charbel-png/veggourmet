@@ -18,6 +18,6 @@ class Empleado extends Model
 
     public function puesto()
     {
-        return $this->belongsTo(Puesto::class, 'id_puesto', 'id_puesto');
+        return $this->belongsTo(Puesto::class, 'id_puesto');
     }
 }
