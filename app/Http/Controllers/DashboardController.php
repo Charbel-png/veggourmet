@@ -43,7 +43,7 @@ class DashboardController extends Controller
 
         // Productos con menor stock (un collection, NO un count)
         $productosMenorStock = DB::table('productos')
-            ->join('inventario', 'productos.id_producto', '=', 'inventario.id_inventario')
+            ->join('inventario', 'productos.id_producto', '=', 'inventario.id_producto')
             ->select(
                 'productos.id_producto',
                 'productos.nombre',
