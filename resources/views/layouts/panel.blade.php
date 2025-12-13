@@ -234,18 +234,28 @@
                 <span>Pedidos</span>
             </a>
 
-            {{-- INVENTARIO --}}
-            <div class="vg-nav-title">Inventario</div>
-            <a href="{{ route('productos.index') }}"
-               class="vg-nav-link {{ request()->routeIs('productos.*') ? 'active' : '' }}">
-                <i class="bi bi-box-seam"></i>
-                <span>Productos</span>
-            </a>
-            <a href="{{ route('categorias.index') }}"
-               class="vg-nav-link {{ request()->routeIs('categorias.*') ? 'active' : '' }}">
-                <i class="bi bi-tags"></i>
-                <span>Categorías</span>
-            </a>
+{{-- INVENTARIO --}}
+<div class="vg-nav-title">Inventario</div>
+
+<a href="{{ route('productos.index') }}"
+   class="vg-nav-link {{ request()->routeIs('productos.*') ? 'active' : '' }}">
+    <i class="bi bi-box-seam"></i>
+    <span>Productos</span>
+</a>
+
+<a href="{{ route('inventario.index') }}"
+   class="vg-nav-link {{ request()->routeIs('inventario.*') ? 'active' : '' }}">
+    <i class="bi bi-clipboard-data"></i>
+    <span>Inventario</span>
+</a>
+
+<a href="{{ route('categorias.index') }}"
+   class="vg-nav-link {{ request()->routeIs('categorias.*') ? 'active' : '' }}">
+    <i class="bi bi-tags"></i>
+    <span>Categorías</span>
+</a>
+
+
 
             {{-- CLIENTES --}}
             <div class="vg-nav-title">Clientes</div>

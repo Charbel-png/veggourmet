@@ -5,170 +5,125 @@ namespace App\Http\Controllers;
 use App\Models\Pedido;
 use App\Models\Cliente;
 use App\Models\EstadoPedido;
+use App\Models\Inventario;
+use App\Models\DetallePedido;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class PedidoController extends Controller
 {
-    // GET /pedidos
+    // GET /pedidos (panel administración)
     public function index()
     {
-        $user = auth()->user();
+        $this->ensureAdminOperador();
 
-        if (! $user || ! in_array($user->tipo, ['admin', 'operador'])) {
-            abort(403, 'No tienes permisos para ver pedidos.');
-        }
+        $pedidos = Pedido::with(['cliente', 'estado'])
+            ->orderByDesc('fecha')
+            ->paginate(20);
 
-        $this->ensureAdminOperador(); // o comenta esto si también quieres que cliente vea aquí
-
-    $pedidos = Pedido::with('cliente')
-        ->orderByDesc('fecha')
-        ->paginate(20);
-
-    return view('pedidos.index', compact('pedidos'));
+        return view('pedidos.index', compact('pedidos'));
     }
 
-    // GET /pedidos/create
+    // GET /pedidos/create (panel administración)
     public function create()
     {
-        $user = auth()->user();
+        $this->ensureAdminOperador();
 
-        if (! $user || ! in_array($user->tipo, ['admin', 'operador'])) {
-            abort(403, 'No tienes permisos para crear pedidos.');
-        }
-
-        $this->ensureSoloCliente();
-
-        $clientes = Cliente::orderBy('nombre')->get();
-        $estados  = EstadoPedido::orderBy('nombre')->get();
-
-        // fecha actual por defecto
+        $clientes     = Cliente::orderBy('nombre')->get();
+        $estados      = EstadoPedido::orderBy('nombre')->get();
         $fechaDefault = now()->format('Y-m-d\TH:i');
 
         return view('pedidos.create', compact('clientes', 'estados', 'fechaDefault'));
     }
 
-    // POST /pedidos
+    // POST /pedidos (panel administración)
     public function store(Request $request)
     {
-        $user = auth()->user();
+        $this->ensureAdminOperador();
 
-        if (! $user || ! in_array($user->tipo, ['admin', 'operador'])) {
-            abort(403);
-        }
-
-        $this->ensureSoloCliente();
-
-        $request->validate([
-            'id_cliente' => 'nullable|exists:clientes,id_cliente',
-            'fecha'      => 'required|date',
-            'id_estado'  => 'required|exists:estados_pedido,id_estado',
-            'tipo'       => 'required|string|max:20',
+        $data = $request->validate([
+            'id_cliente' => ['nullable', 'exists:clientes,id_cliente'],
+            'fecha'      => ['required', 'date'],
+            'id_estado'  => ['required', 'exists:estados_pedido,id_estado'],
+            'tipo'       => ['required', 'string', 'max:20'],
         ]);
 
         Pedido::create([
-            'id_cliente'       => $request->id_cliente ?: null,
-            'fecha'            => $request->fecha,
-            'id_estado'        => $request->id_estado,
-            'tipo'             => $request->tipo,
-            // por ahora no usamos empleado_toma
-            'id_empleado_toma' => null,
-        ]);
+            'id_cliente'       => $data['id_cliente'] ?? null,
+            'fecha'            => $data['fecha'],
+            'id_estado'        => $data['id_estado'],
+            'tipo'             => $data['tipo'],
+            'id_empleado_toma' => null, // por ahora no se usa
+        });
 
-        return redirect()->route('pedidos.index')
+        return redirect()
+            ->route('pedidos.index')
             ->with('success', 'Pedido creado correctamente.');
     }
 
-    // GET /pedidos/{pedido}/edit
+    // GET /pedidos/{pedido}/edit (panel administración)
     public function edit(Pedido $pedido)
     {
-        $user = auth()->user();
+        $this->ensureAdminOperador();
 
-        if (! $user || ! in_array($user->tipo, ['admin', 'operador'])) {
-            abort(403);
-        }
-
-        $this->ensureSoloCliente();
-
-        $clientes = Cliente::orderBy('nombre')->get();
-        $estados  = EstadoPedido::orderBy('nombre')->get();
-
+        $clientes     = Cliente::orderBy('nombre')->get();
+        $estados      = EstadoPedido::orderBy('nombre')->get();
         $fechaDefault = date('Y-m-d\TH:i', strtotime($pedido->fecha));
 
         return view('pedidos.edit', compact('pedido', 'clientes', 'estados', 'fechaDefault'));
     }
 
-    // PUT /pedidos/{pedido}
+    // PUT /pedidos/{pedido} (panel administración)
     public function update(Request $request, Pedido $pedido)
     {
-        $user = auth()->user();
+        $this->ensureAdminOperador();
 
-        if (! $user || ! in_array($user->tipo, ['admin', 'operador'])) {
-            abort(403);
-        }
-
-        $request->validate([
-            'id_cliente' => 'nullable|exists:clientes,id_cliente',
-            'fecha'      => 'required|date',
-            'id_estado'  => 'required|exists:estados_pedido,id_estado',
-            'tipo'       => 'required|string|max:20',
+        $data = $request->validate([
+            'id_cliente' => ['nullable', 'exists:clientes,id_cliente'],
+            'fecha'      => ['required', 'date'],
+            'id_estado'  => ['required', 'exists:estados_pedido,id_estado'],
+            'tipo'       => ['required', 'string', 'max:20'],
         ]);
 
         $pedido->update([
-            'id_cliente' => $request->id_cliente ?: null,
-            'fecha'      => $request->fecha,
-            'id_estado'  => $request->id_estado,
-            'tipo'       => $request->tipo,
+            'id_cliente' => $data['id_cliente'] ?? null,
+            'fecha'      => $data['fecha'],
+            'id_estado'  => $data['id_estado'],
+            'tipo'       => $data['tipo'],
         ]);
 
-        return redirect()->route('pedidos.index')
+        return redirect()
+            ->route('pedidos.index')
             ->with('success', 'Pedido actualizado correctamente.');
     }
 
-    // DELETE /pedidos/{pedido}
+    // DELETE /pedidos/{pedido} (panel administración)
     public function destroy(Pedido $pedido)
     {
-        $user = auth()->user();
-
-        if (! $user || ! in_array($user->tipo, ['admin', 'operador'])) {
-            abort(403);
-        }
-
         $this->ensureAdminOperador();
 
-    $pedido->delete();
+        $pedido->delete();
 
-    return back()->with('success', 'Pedido eliminado correctamente.');
+        return back()->with('success', 'Pedido eliminado correctamente.');
     }
 
-    protected function ensureSoloCliente()
-    {
-        if (auth()->user()->tipo !== 'cliente') {
-            abort(403, 'Solo los clientes pueden crear o modificar pedidos.');
-        }
-    }
-
-    protected function ensureAdminOperador()
-    {
-        if (!in_array(auth()->user()->tipo, ['admin', 'operador'])) {
-            abort(403, 'Solo el personal del restaurante puede gestionar pedidos.');
-        }
-    }
+    // GET /pedidos/{id} - detalle del pedido
     public function show($id)
     {
         $user = auth()->user();
 
-        // Base de la consulta: pedido + cliente + estado + detalles con producto
+        // Pedido + cliente + estado + detalles con producto
         $query = Pedido::with([
-            'cliente',
-            'estado',
-            'detalles.producto',
-        ])->where('id_pedido', $id);
+                'cliente',
+                'estado',
+                'detalles.producto',
+            ])
+            ->where('id_pedido', $id);
 
         // Reglas de acceso:
-        //  - admin / operador: pueden ver cualquier pedido
+        //  - admin / operador: cualquier pedido
         //  - cliente: solo sus propios pedidos
-        if ($user->tipo === 'cliente') {
-            // Ajusta este campo si tu User está ligado de otra forma al cliente
+        if ($user && $user->tipo === 'cliente') {
             $clienteId = $user->id_cliente ?? null;
             $query->where('id_cliente', $clienteId);
         }
@@ -179,8 +134,9 @@ class PedidoController extends Controller
         $subtotal = 0;
 
         foreach ($pedido->detalles as $detalle) {
-            $precio = $detalle->producto->precio_venta ?? 0;
-            $importe = (float) $detalle->cantidad * (float) $precio;
+            $precio   = $detalle->producto->precio_venta ?? 0;
+            $cantidad = (float) $detalle->cantidad;
+            $importe  = $cantidad * (float) $precio;
 
             // Propiedad "virtual" solo para la vista
             $detalle->importe_calculado = $importe;
@@ -188,8 +144,141 @@ class PedidoController extends Controller
             $subtotal += $importe;
         }
 
-        $total = $subtotal; // aquí luego podrías sumar IVA o descuentos
+        $total = $subtotal; // aquí luego puedes sumar IVA, descuentos, etc.
 
         return view('pedidos.show', compact('pedido', 'subtotal', 'total'));
+    }
+
+    /**
+     * Confirmar pedido a partir del carrito del cliente
+     * y descontar stock del inventario.
+     *
+     * Ruta: POST /cliente/pedido/confirmar
+     */
+    public function confirmarDesdeCarrito(Request $request)
+    {
+        $this->ensureSoloCliente();
+
+        // Carrito almacenado en sesión
+        $cart = session('cart', []);
+
+        if (empty($cart)) {
+            return redirect()
+                ->route('cart.index')
+                ->with('error', 'Tu carrito está vacío.');
+        }
+
+        $user      = auth()->user();
+        $idCliente = $user->id_cliente ?? null;
+
+        DB::beginTransaction();
+
+        try {
+            // Buscar estado "Pendiente" (fallback al id 1 si no existe)
+            $estadoPendiente = EstadoPedido::where('nombre', 'Pendiente')->first();
+            $idEstado        = $estadoPendiente ? $estadoPendiente->id_estado : 1;
+
+            // 1) Crear pedido
+            $pedido = Pedido::create([
+                'id_cliente'       => $idCliente,
+                'fecha'            => now(),
+                'id_estado'        => $idEstado,
+                'tipo'             => 'online',
+                'id_empleado_toma' => null,
+            ]);
+
+            // 2) Crear un detalle por cada producto del carrito
+            foreach ($cart as $item) {
+                // 🔴 IMPORTANTE:
+                // Aquí asumimos que cada elemento del carrito
+                // tiene las claves 'id_producto' y 'cantidad'.
+                $idProducto = $item['id_producto'] ?? null;
+                $cantidad   = $item['cantidad'] ?? null;
+
+                if (! $idProducto || ! $cantidad || $cantidad <= 0) {
+                    continue;
+                }
+
+                DetallePedido::create([
+                    'id_pedido'   => $pedido->id_pedido,
+                    'id_producto' => $idProducto,
+                    'cantidad'    => $cantidad,
+                ]);
+            }
+
+            // 3) Descontar stock del inventario según ese pedido
+            $this->descontarStockPedido($pedido->id_pedido);
+
+            // 4) Vaciar carrito
+            session()->forget('cart');
+
+            DB::commit();
+
+            return redirect()
+                ->route('pedidos.show', $pedido->id_pedido)
+                ->with('success', 'Pedido confirmado y stock actualizado correctamente.');
+        } catch (\Throwable $e) {
+            DB::rollBack();
+
+            report($e);
+
+            return redirect()
+                ->route('cart.index')
+                ->with('error', 'Ocurrió un problema al confirmar tu pedido. Intenta de nuevo.');
+        }
+    }
+
+    /**
+     * Descuenta stock del inventario según el detalle del pedido.
+     */
+    protected function descontarStockPedido(int $idPedido): void
+    {
+        $detalles = DetallePedido::where('id_pedido', $idPedido)->get();
+
+        if ($detalles->isEmpty()) {
+            return;
+        }
+
+        foreach ($detalles as $detalle) {
+            $inventario = Inventario::where('id_producto', $detalle->id_producto)->first();
+
+            // Si no hay inventario registrado para ese producto, lo ignoramos
+            if (! $inventario) {
+                continue;
+            }
+
+            $stockActual = (float) $inventario->stock;
+            $cantidad    = (float) $detalle->cantidad;
+
+            // Nuevo stock (no dejamos que sea negativo)
+            $nuevoStock = max(0, $stockActual - $cantidad);
+
+            $inventario->stock = $nuevoStock;
+            $inventario->save();
+        }
+    }
+
+    /**
+     * Solo clientes (para flujo de carrito / cliente).
+     */
+    protected function ensureSoloCliente()
+    {
+        $user = auth()->user();
+
+        if (! $user || $user->tipo !== 'cliente') {
+            abort(403, 'Solo los clientes pueden realizar esta acción.');
+        }
+    }
+
+    /**
+     * Solo admin u operador (para panel de administración).
+     */
+    protected function ensureAdminOperador()
+    {
+        $user = auth()->user();
+
+        if (! $user || ! in_array($user->tipo, ['admin', 'operador'])) {
+            abort(403, 'Solo el personal del restaurante puede gestionar pedidos.');
+        }
     }
 }

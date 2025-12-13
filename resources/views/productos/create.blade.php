@@ -1,26 +1,41 @@
-@extends('layouts.panel')
+{{-- resources/views/productos/create.blade.php --}}
+
+@extends('admin.admin') {{-- o lo que use tu otra vista, por ejemplo 'layouts.app' --}}
 
 @section('title', 'Nuevo producto')
 
 @section('content')
-<h1 class="mb-3">Nuevo producto</h1>
+<div class="container py-4">
+    <h1 class="h4 mb-4">Nuevo producto</h1>
 
-<form action="{{ route('productos.store') }}" method="POST">
-    @include('productos.form')
+    {{-- Errores generales --}}
+    @if ($errors->any())
+        <div class="alert alert-danger">
+            <strong>Ups...</strong> Hay errores en el formulario.
+            <ul class="mb-0 mt-2">
+                @foreach ($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
 
-    <div class="d-flex justify-content-end gap-2 mt-3">
-        <a href="{{ route('productos.index') }}"
-           class="btn btn-outline-secondary"
-           title="Cancelar">
-            <i class="bi bi-x-circle"></i>
-        </a>
+    <form method="POST"
+          action="{{ route('productos.store') }}"
+          enctype="multipart/form-data">
+        @csrf
 
-        <button type="submit"
-                class="btn btn-success"
-                title="Guardar producto">
-            <i class="bi bi-check2-circle"></i>
-        </button>
-    </div>
-</form>
+        {{-- Campos del formulario --}}
+        @include('productos.form')
 
+        <div class="d-flex justify-content-between mt-3">
+            <a href="{{ route('productos.index') }}" class="btn btn-outline-secondary">
+                Cancelar
+            </a>
+            <button type="submit" class="btn btn-success">
+                Guardar producto
+            </button>
+        </div>
+    </form>
+</div>
 @endsection

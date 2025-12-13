@@ -5,11 +5,13 @@
 @section('content')
     <h1 class="h4 mb-3">Productos</h1>
 
-    @if(session('success'))
-        <div class="alert alert-success py-2">
-            {{ session('success') }}
-        </div>
-    @endif
+@if (session('success'))
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        {{ session('success') }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+    </div>
+@endif
+
 
     <div class="card border-0 shadow-sm">
         <div class="card-body">

@@ -2,21 +2,17 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Inventario extends Model
 {
+    use HasFactory;
+
     protected $table = 'inventario';
-
-    // Ahora la PK es id_producto
-    protected $primaryKey = 'id_producto';
-
-    // No es autoincremental (porque coincide con productos.id_producto)
-    public $incrementing = false;
+    protected $primaryKey = 'id_producto';   // <--- CLAVE REAL
+    public $incrementing = false;            // porque no es autoincrement
     protected $keyType = 'int';
-
-    // La tabla inventario no maneja created_at / updated_at
-    public $timestamps = false;
 
     protected $fillable = [
         'id_producto',
@@ -26,7 +22,12 @@ class Inventario extends Model
 
     public function producto()
     {
-        // inventario.id_producto -> productos.id_producto
         return $this->belongsTo(Producto::class, 'id_producto', 'id_producto');
+    }
+
+    // Para que el route model binding use id_producto
+    public function getRouteKeyName()
+    {
+        return 'id_producto';
     }
 }

@@ -12,6 +12,8 @@ use App\Http\Controllers\EmpleadoController;
 use App\Http\Controllers\PedidoController;
 use App\Http\Controllers\CompraController;
 use App\Http\Controllers\RecetaController;
+use App\Http\Controllers\InventarioController;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -80,6 +82,11 @@ Route::middleware(['auth'])->group(function () {
         '/cliente/carrito/vaciar',
         [CartController::class, 'clear']
     )->name('cliente.carrito.clear');
+
+    // --- Inventario (solo listar y editar) ---
+    Route::resource('inventario', InventarioController::class)
+        ->only(['index', 'edit', 'update']);
+
 
     // --------- Solicitudes de acceso (solo admin, se valida en el controlador) ---------
     Route::get('/admin/solicitudes', [AdminUserController::class, 'index'])

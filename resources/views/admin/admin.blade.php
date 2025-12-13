@@ -72,106 +72,134 @@
     }
 </style>
 
+@php
+    $user = auth()->user();
+@endphp
+
 <div class="dash-wrapper">
     {{-- Sidebar estilo panel --}}
     <aside class="dash-sidebar d-none d-md-block">
-        <div class="mb-3">
-            <div class="user-name">{{ $user->name }}</div>
-            <div class="user-role">
-                {{ ucfirst($user->tipo) }}
+
+        @if($user)
+            <div class="mb-3">
+                <div class="user-name">{{ $user->name }}</div>
+                <div class="user-role">
+                    {{ ucfirst($user->tipo) }}
+                </div>
             </div>
-        </div>
+        @endif
 
         <div class="dash-menu">
-            <div class="dash-menu-title">Navegación</div>
-            <a href="{{ route('admin.dashboard') }}" class="active">
-                <i class="bi bi-speedometer2"></i> Dashboard
-            </a>
-            <a href="{{ route('productos.index') }}">
-                <i class="bi bi-box-seam"></i> Productos
-            </a>
-            <a href="{{ route('clientes.index') }}">
-                <i class="bi bi-people"></i> Clientes
-            </a>
-            <a href="{{ route('pedidos.index') }}">
-                <i class="bi bi-receipt"></i> Pedidos
-            </a>
+    <div class="dash-menu-title">Navegación</div>
 
-            @if($user->tipo === 'admin')
-                <div class="dash-menu-title">Administración</div>
-                <a href="{{ route('empleados.index') }}">
-                    <i class="bi bi-person-badge"></i> Empleados
-                </a>
-                <a href="{{ route('admin.solicitudes') }}">
-                    <i class="bi bi-person-plus"></i> Solicitudes
-                </a>
-            @endif
-        </div>
+    <a href="{{ route('admin.dashboard') }}" class="active">
+        <i class="bi bi-speedometer2"></i> Dashboard
+    </a>
+
+    <a href="{{ route('productos.index') }}">
+        <i class="bi bi-box-seam"></i> Productos
+    </a>
+
+    {{-- NUEVO: Inventario --}}
+    <a href="{{ route('inventario.index') }}">
+        <i class="bi bi-box-seam"></i> Inventario
+    </a>
+
+    <a href="{{ route('clientes.index') }}">
+        <i class="bi bi-people"></i> Clientes
+    </a>
+
+    <a href="{{ route('pedidos.index') }}">
+        <i class="bi bi-receipt"></i> Pedidos
+    </a>
+
+    @if($user && $user->tipo === 'admin')
+        <div class="dash-menu-title">Administración</div>
+
+        <a href="{{ route('empleados.index') }}">
+            <i class="bi bi-person-badge"></i> Empleados
+        </a>
+
+        <a href="{{ route('admin.solicitudes') }}">
+            <i class="bi bi-person-plus"></i> Solicitudes
+        </a>
+    @endif
+</div>
+
     </aside>
 
     {{-- Contenido principal --}}
     <div class="dash-main">
         <h1 class="h4 mb-3">Dashboard</h1>
 
-        {{-- Tarjetas superiores --}}
-        <div class="row g-3 dash-cards mb-4">
-            <div class="col-md-3">
-                <div class="card dash-card-1 p-3">
-                    <div class="dash-card-title">Ingresos hoy</div>
-                    <div class="dash-card-value">${{ number_format($ingresosHoy, 2) }}</div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card dash-card-2 p-3">
-                    <div class="dash-card-title">Productos con stock bajo</div>
-                    <div class="dash-card-value">{{ $productosStockBajo }}</div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card dash-card-3 p-3">
-                    <div class="dash-card-title">Total productos</div>
-                    <div class="dash-card-value">{{ $totalProductos }}</div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card dash-card-4 p-3">
-                    <div class="dash-card-title">Pedidos registrados</div>
-                    <div class="dash-card-value">{{ $totalPedidos }}</div>
-                </div>
-            </div>
-        </div>
-
-        {{-- Tabla de "próximos" (aquí usamos los de menor stock) --}}
-        <div class="card shadow-sm border-0">
-            <div class="card-body">
-                <h5 class="card-title mb-3">Productos con menor stock</h5>
-
-                @if($proximos->isEmpty())
-                    <p class="text-muted mb-0">No hay productos registrados.</p>
-                @else
-                    <div class="table-responsive">
-                        <table class="table mb-0 align-middle">
-                            <thead>
-                                <tr>
-                                    <th>Producto</th>
-                                    <th>Stock</th>
-                                    <th>Stock mínimo</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach($proximos as $inv)
-                                    <tr>
-                                        <td>{{ $inv->producto->nombre ?? 'Sin nombre' }}</td>
-                                        <td>{{ $inv->stock }}</td>
-                                        <td>{{ $inv->stock_minimo }}</td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
+        {{-- Tarjetas superiores: solo se muestran si el controlador mandó los datos --}}
+        @isset($ingresosHoy, $productosStockBajo, $totalProductos, $totalPedidos)
+            <div class="row g-3 dash-cards mb-4">
+                <div class="col-md-3">
+                    <div class="card dash-card-1 p-3">
+                        <div class="dash-card-title">Ingresos hoy</div>
+                        <div class="dash-card-value">
+                            ${{ number_format($ingresosHoy, 2) }}
+                        </div>
                     </div>
-                @endif
+                </div>
+
+                <div class="col-md-3">
+                    <div class="card dash-card-2 p-3">
+                        <div class="dash-card-title">Productos con stock bajo</div>
+                        <div class="dash-card-value">{{ $productosStockBajo }}</div>
+                    </div>
+                </div>
+
+                <div class="col-md-3">
+                    <div class="card dash-card-3 p-3">
+                        <div class="dash-card-title">Total productos</div>
+                        <div class="dash-card-value">{{ $totalProductos }}</div>
+                    </div>
+                </div>
+
+                <div class="col-md-3">
+                    <div class="card dash-card-4 p-3">
+                        <div class="dash-card-title">Pedidos registrados</div>
+                        <div class="dash-card-value">{{ $totalPedidos }}</div>
+                    </div>
+                </div>
             </div>
-        </div>
+        @endisset
+
+        {{-- Tabla de productos con menor stock: también protegida --}}
+        @isset($proximos)
+            <div class="card shadow-sm border-0">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">Productos con menor stock</h5>
+
+                    @if($proximos->isEmpty())
+                        <p class="text-muted mb-0">No hay productos registrados.</p>
+                    @else
+                        <div class="table-responsive">
+                            <table class="table mb-0 align-middle">
+                                <thead>
+                                    <tr>
+                                        <th>Producto</th>
+                                        <th>Stock</th>
+                                        <th>Stock mínimo</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($proximos as $inv)
+                                        <tr>
+                                            <td>{{ $inv->producto->nombre ?? 'Sin nombre' }}</td>
+                                            <td>{{ $inv->stock }}</td>
+                                            <td>{{ $inv->stock_minimo }}</td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    @endif
+                </div>
+            </div>
+        @endisset
     </div>
 </div>
 @endsection

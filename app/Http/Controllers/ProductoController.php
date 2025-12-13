@@ -40,40 +40,30 @@ class ProductoController extends Controller
     }
 
     // POST /productos
-    public function store(Request $request)
-    {
-        $data = $request->validate([
-            'nombre'       => 'required|string|max:120',
-            'id_categoria' => 'required|exists:categorias,id_categoria',
-            'descripcion'  => 'nullable|string|max:255',
-            'estado'       => 'required|in:0,1',
-            'descripcion'   => 'nullable|string|max:255',
-        'imagen'        => 'nullable|string|max:255',
-        'precio_venta'  => 'required|numeric|min:0',
-        'stock'         => 'required|numeric|min:0',
-        'stock_minimo'  => 'required|numeric|min:0',
-        ]);
+public function store(Request $request)
+{
+    $data = $request->validate([
+        'id_categoria' => ['required', 'exists:categorias,id_categoria'],
+        'nombre'       => ['required', 'string', 'max:120'],
+        'descripcion'  => ['nullable', 'string'],
+        'precio_venta' => ['required', 'numeric', 'min:0'],
+        'estado'       => ['required', 'boolean'],
+        'imagen'       => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+    ]);
 
-        DB::transaction(function () use ($data) {
-        $producto = Producto::create([
-            'nombre'       => $data['nombre'],
-            'id_categoria' => $data['id_categoria'],
-            'descripcion'  => $data['descripcion'] ?? null,
-            'imagen'       => $data['imagen'] ?? null,
-            'precio_venta' => $data['precio_venta'],
-            // 'estado' se ajusta con el trigger según el stock
-        ]);
-
-        Inventario::create([
-            'id_inventario' => $producto->id_producto,
-            'stock'         => $data['stock'],
-            'stock_minimo'  => $data['stock_minimo'],
-        ]);
-    });
-
-    return redirect()->route('productos.index')
-        ->with('success', 'Producto creado correctamente.');
+    if ($request->hasFile('imagen')) {
+        $data['imagen'] = $request->file('imagen')->store('productos', 'public');
     }
+
+    $data['activo'] = 1;
+
+    Producto::create($data);
+
+    return redirect()
+        ->route('productos.index')
+        ->with('success', 'Producto creado correctamente.');
+}
+
 
     // GET /productos/{producto}/edit
     public function edit(Producto $producto)
