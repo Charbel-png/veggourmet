@@ -58,7 +58,6 @@
                     <table class="table align-middle table-hover mb-0">
                         <thead>
                             <tr>
-                                <th>#</th>
                                 <th>Imagen</th>
                                 <th>Nombre</th>
                                 <th>Categoría</th>
@@ -72,9 +71,6 @@
                         <tbody>
                             @foreach($productos as $producto)
                                 <tr>
-                                    {{-- ID o contador --}}
-                                    <td>{{ $producto->id_producto }}</td>
-
                                     {{-- Imagen (acepta URL externa o ruta interna tipo img/productos/...) --}}
                                     <td>
                                         @php
@@ -107,7 +103,7 @@
                                         ${{ number_format($producto->precio_venta, 2) }}
                                     </td>
 
-                                    {{-- Stock (desde inventario) --}}
+                                    {{-- Stock (desde inventario, solo vista) --}}
                                     <td class="text-center">
                                         {{ optional($producto->inventario)->stock ?? 0 }}
                                     </td>

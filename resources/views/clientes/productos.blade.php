@@ -21,17 +21,25 @@
                     <div class="card h-100 shadow-sm border-0">
                         {{-- Imagen --}}
                         @php
-                            $img = $producto->imagen
-                                ? asset('storage/productos/' . $producto->imagen)
-                                : asset('img/producto-placeholder.png');
+                            $img = $producto->imagen;
+
+                            if ($img) {
+                                // Si NO comienza con http/https, asumimos ruta interna dentro de /public
+                                if (!preg_match('#^https?://#', $img)) {
+                                    $img = asset($img);   // ej: img/productos/agua_pepino.jpg
+                                }
+                            } else {
+                                // Sin imagen => placeholder
+                                $img = asset('img/producto-placeholder.png');
+                            }
 
                             $stock = optional($producto->inventario)->stock ?? 0;
                         @endphp
 
                         <img src="{{ $img }}"
-                            class="card-img-top"
-                            alt="{{ $producto->nombre }}"
-                            style="object-fit: cover; height: 170px;">
+                             class="card-img-top"
+                             alt="{{ $producto->nombre }}"
+                             style="object-fit: cover; height: 170px;">
 
                         <div class="card-body d-flex flex-column">
                             <small class="text-muted">
@@ -50,19 +58,19 @@
 
                             {{-- Formulario añadir al carrito --}}
                             <form method="POST"
-                                action="{{ route('clientes.carrito.add', $producto->id_producto) }}"
-                                class="mt-auto">
+                                  action="{{ route('clientes.carrito.add', $producto->id_producto) }}"
+                                  class="mt-auto">
                                 @csrf
 
                                 <div class="input-group input-group-sm mb-2">
                                     <span class="input-group-text">Cant.</span>
                                     <input type="number"
-                                        name="cantidad"
-                                        min="1"
-                                        max="{{ $stock > 0 ? $stock : null }}"
-                                        value="1"
-                                        class="form-control"
-                                        {{ $stock <= 0 ? 'disabled' : '' }}>
+                                           name="cantidad"
+                                           min="1"
+                                           max="{{ $stock > 0 ? $stock : null }}"
+                                           value="1"
+                                           class="form-control"
+                                           {{ $stock <= 0 ? 'disabled' : '' }}>
                                 </div>
 
                                 <button type="submit"
@@ -132,7 +140,7 @@
                     </div>
 
                     <a href="{{ route('clientes.carrito') }}"
-                    class="btn btn-outline-success w-100 mb-2">
+                       class="btn btn-outline-success w-100 mb-2">
                         Ver carrito completo
                     </a>
 

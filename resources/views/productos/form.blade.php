@@ -1,101 +1,139 @@
-{{-- resources/views/productos/form.blade.php --}}
-{{-- Aquí NO va <form>, sólo los campos --}}
+@php
+    // Aseguramos tener el inventario cargado (solo para mostrar valores)
+    $inv = $producto->inventario ?? null;
+@endphp
 
-<div class="mb-3">
-    <label for="nombre" class="form-label">Nombre *</label>
-    <input type="text" name="nombre" id="nombre"
-           class="form-control @error('nombre') is-invalid @enderror"
-           value="{{ old('nombre', $producto->nombre ?? '') }}" required>
-    @error('nombre')
-        <div class="invalid-feedback">{{ $message }}</div>
-    @enderror
-</div>
+<div class="row g-3">
 
-<div class="mb-3">
-    <label for="id_categoria" class="form-label">Categoría *</label>
-    <select name="id_categoria" id="id_categoria"
-            class="form-select @error('id_categoria') is-invalid @enderror" required>
-        <option value="">Seleccione una categoría</option>
-        @foreach($categorias as $cat)
-            <option value="{{ $cat->id_categoria }}"
-                {{ (int) old('id_categoria', $producto->id_categoria ?? 0) === (int) $cat->id_categoria ? 'selected' : '' }}>
-                {{ $cat->nombre }}
-            </option>
-        @endforeach
-    </select>
-    @error('id_categoria')
-        <div class="invalid-feedback">{{ $message }}</div>
-    @enderror
-</div>
+    {{-- Nombre --}}
+    <div class="col-12">
+        <label class="form-label">Nombre *</label>
+        <input type="text"
+               name="nombre"
+               class="form-control @error('nombre') is-invalid @enderror"
+               value="{{ old('nombre', $producto->nombre) }}"
+               required>
+        @error('nombre')
+            <div class="invalid-feedback">{{ $message }}</div>
+        @enderror
+    </div>
 
-<div class="mb-3">
-    <label for="descripcion" class="form-label">Descripción</label>
-    <textarea name="descripcion" id="descripcion" rows="3"
-              class="form-control @error('descripcion') is-invalid @enderror">{{ old('descripcion', $producto->descripcion ?? '') }}</textarea>
-    @error('descripcion')
-        <div class="invalid-feedback">{{ $message }}</div>
-    @enderror
-</div>
+    {{-- Categoría --}}
+    <div class="col-12">
+        <label class="form-label">Categoría *</label>
+        <select name="id_categoria"
+                class="form-select @error('id_categoria') is-invalid @enderror"
+                required>
+            <option value="">Selecciona una categoría...</option>
+            @foreach($categorias as $cat)
+                <option value="{{ $cat->id_categoria }}"
+                    @selected(old('id_categoria', $producto->id_categoria) == $cat->id_categoria)>
+                    {{ $cat->nombre }}
+                </option>
+            @endforeach
+        </select>
+        @error('id_categoria')
+            <div class="invalid-feedback">{{ $message }}</div>
+        @enderror
+    </div>
 
-<div class="mb-3">
-    <label for="imagen" class="form-label">Imagen (URL o ruta interna)</label>
-    <input
-        type="text"
-        name="imagen"
-        id="imagen"
-        class="form-control @error('imagen') is-invalid @enderror"
-        value="{{ old('imagen', $producto->imagen ?? '') }}"
-        placeholder="https://...jpg  o  img/productos/avena_overnight.jpg">
-    @error('imagen')
-        <div class="invalid-feedback">{{ $message }}</div>
-    @enderror
-</div>
+    {{-- Descripción --}}
+    <div class="col-12">
+        <label class="form-label">Descripción</label>
+        <textarea name="descripcion"
+                  rows="3"
+                  class="form-control @error('descripcion') is-invalid @enderror"
+                  placeholder="Descripción breve del producto">{{ old('descripcion', $producto->descripcion) }}</textarea>
+        @error('descripcion')
+            <div class="invalid-feedback">{{ $message }}</div>
+        @enderror
+    </div>
 
+    {{-- Imagen: texto y archivo --}}
+    <div class="col-12">
+        <label class="form-label">Imagen (URL o ruta interna)</label>
+        <input type="text"
+               name="imagen"
+               class="form-control mb-2 @error('imagen') is-invalid @enderror"
+               value="{{ old('imagen', $producto->imagen) }}"
+               placeholder="https://... o img/productos/archivo.jpg">
+        @error('imagen')
+            <div class="invalid-feedback">{{ $message }}</div>
+        @enderror
 
+        <label class="form-label small text-muted mb-1">
+            O bien selecciona un archivo de imagen (tendrá prioridad sobre el campo de texto):
+        </label>
+        <input type="file"
+               name="imagen_archivo"
+               accept="image/*"
+               class="form-control @error('imagen_archivo') is-invalid @enderror">
+        @error('imagen_archivo')
+            <div class="invalid-feedback">{{ $message }}</div>
+        @enderror
 
-<div class="row">
-    <div class="col-md-4 mb-3">
-        <label for="precio_venta" class="form-label">Precio venta *</label>
-        <input type="number" step="0.01"
-               name="precio_venta" id="precio_venta"
+        @if(!empty($producto->imagen))
+            @php
+                $preview = $producto->imagen;
+                if (!preg_match('#^https?://#', $preview)) {
+                    $preview = asset($preview);
+                }
+            @endphp
+            <div class="mt-2">
+                <small class="text-muted d-block mb-1">Vista previa:</small>
+                <img src="{{ $preview }}"
+                     alt="Imagen actual"
+                     style="max-width: 160px; max-height: 160px; object-fit: cover;"
+                     class="border rounded">
+            </div>
+        @endif
+    </div>
+
+    {{-- Precio --}}
+    <div class="col-md-4">
+        <label class="form-label">Precio venta *</label>
+        <input type="number"
+               step="0.01"
+               min="0"
+               name="precio_venta"
                class="form-control @error('precio_venta') is-invalid @enderror"
-               value="{{ old('precio_venta', $producto->precio_venta ?? 0) }}" required>
+               value="{{ old('precio_venta', $producto->precio_venta) }}"
+               required>
         @error('precio_venta')
             <div class="invalid-feedback">{{ $message }}</div>
         @enderror
     </div>
 
-    <div class="col-md-4 mb-3">
-        <label for="stock" class="form-label">Stock actual *</label>
-        <input type="number" step="0.01"
-               name="stock" id="stock"
-               class="form-control @error('stock') is-invalid @enderror"
-               value="{{ old('stock', $producto->inventario->stock ?? 0) }}" required>
-        @error('stock')
+    {{-- Stock actual (solo vista) --}}
+    <div class="col-md-4">
+        <label class="form-label">Stock actual (solo vista)</label>
+        <input type="number"
+               class="form-control"
+               value="{{ $inv?->stock ?? 0 }}"
+               disabled>
+    </div>
+
+    {{-- Stock mínimo (solo vista) --}}
+    <div class="col-md-4">
+        <label class="form-label">Stock mínimo (solo vista)</label>
+        <input type="number"
+               class="form-control"
+               value="{{ $inv?->stock_minimo ?? 0 }}"
+               disabled>
+    </div>
+
+    {{-- Estado --}}
+    <div class="col-md-4">
+        <label class="form-label">Estado *</label>
+        <select name="estado"
+                class="form-select @error('estado') is-invalid @enderror"
+                required>
+            <option value="1" @selected(old('estado', $producto->estado) == 1)>Activo</option>
+            <option value="0" @selected(old('estado', $producto->estado) == 0)>Inactivo</option>
+        </select>
+        @error('estado')
             <div class="invalid-feedback">{{ $message }}</div>
         @enderror
     </div>
 
-    <div class="col-md-4 mb-3">
-        <label for="stock_minimo" class="form-label">Stock mínimo *</label>
-        <input type="number" step="0.01"
-               name="stock_minimo" id="stock_minimo"
-               class="form-control @error('stock_minimo') is-invalid @enderror"
-               value="{{ old('stock_minimo', $producto->inventario->stock_minimo ?? 0) }}" required>
-        @error('stock_minimo')
-            <div class="invalid-feedback">{{ $message }}</div>
-        @enderror
-    </div>
-</div>
-
-<div class="mb-3">
-    <label for="estado" class="form-label">Estado *</label>
-    <select name="estado" id="estado"
-            class="form-select @error('estado') is-invalid @enderror" required>
-        <option value="1" {{ old('estado', $producto->estado ?? 1) == 1 ? 'selected' : '' }}>Activo</option>
-        <option value="0" {{ old('estado', $producto->estado ?? 1) == 0 ? 'selected' : '' }}>Inactivo</option>
-    </select>
-    @error('estado')
-        <div class="invalid-feedback">{{ $message }}</div>
-    @enderror
 </div>
