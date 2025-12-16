@@ -10,20 +10,31 @@ use Illuminate\Support\Facades\DB;
 
 class ProductoController extends Controller
 {
-    public function index()
-    {
-        $user = auth()->user();
+    // GET /productos
+    public function index(Request $request)
+{
+    $user = auth()->user();
 
     if (! $user || ! in_array($user->tipo, ['admin', 'operador'])) {
-            abort(403, 'No tienes permisos para ver productos.');
-        }
-
-        $productos = Producto::with(['categoria', 'inventario'])
-            ->orderBy('nombre')
-            ->paginate(20);
-
-        return view('productos.index', compact('productos'));
+        abort(403, 'No tienes permisos para ver productos.');
     }
+
+    $query = Producto::with(['categoria', 'inventario']);
+
+    if ($search = $request->input('q')) {
+        $query->where(function ($q) use ($search) {
+            $q->where('nombre', 'like', '%' . $search . '%')
+              ->orWhere('descripcion', 'like', '%' . $search . '%');
+        });
+    }
+
+    $productos = $query
+        ->orderBy('nombre')
+        ->paginate(20);
+
+    return view('productos.index', compact('productos'));
+}
+
     // GET /productos/create
     public function create()
     {
@@ -47,22 +58,26 @@ public function store(Request $request)
         'descripcion'  => ['nullable', 'string'],
         'precio_venta' => ['required', 'numeric', 'min:0'],
         'estado'       => ['required', 'boolean'],
-        'imagen'       => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+        'imagen'       => ['nullable', 'string', 'max:255'],
     ]);
 
-    if ($request->hasFile('imagen')) {
-        $data['imagen'] = $request->file('imagen')->store('productos', 'public');
-    }
-
-    $data['activo'] = 1;
-
-    Producto::create($data);
+    Producto::create([
+        'id_categoria' => $data['id_categoria'],
+        'nombre'       => $data['nombre'],
+        'descripcion'  => $data['descripcion'] ?? null,
+        'precio_venta' => $data['precio_venta'],
+        'estado'       => $data['estado'],
+        'imagen'       => $data['imagen'] ?? null,
+    ]);
 
     return redirect()
         ->route('productos.index')
         ->with('success', 'Producto creado correctamente.');
 }
 
+
+
+    // GET /productos/{producto}/edit
     public function edit(Producto $producto)
     {
         $user=auth()->user();
@@ -76,8 +91,9 @@ public function store(Request $request)
         return view('productos.edit', compact('producto', 'categorias'));
     }
 
+    // PUT /productos/{producto}
     public function update(Request $request, Producto $producto)
-    {
+{
     $data = $request->validate([
         'nombre'        => 'required|string|max:120',
         'id_categoria'  => 'required|exists:categorias,id_categoria',
@@ -86,18 +102,23 @@ public function store(Request $request)
         'precio_venta'  => 'required|numeric|min:0',
         'stock'         => 'required|numeric|min:0',
         'stock_minimo'  => 'required|numeric|min:0',
+        'estado'        => 'required|boolean',
     ]);
 
     DB::transaction(function () use ($producto, $data) {
+        // Actualizamos el producto
         $producto->update([
             'nombre'       => $data['nombre'],
             'id_categoria' => $data['id_categoria'],
             'descripcion'  => $data['descripcion'] ?? null,
             'imagen'       => $data['imagen'] ?? null,
             'precio_venta' => $data['precio_venta'],
+            'estado'       => $data['estado'],
         ]);
 
+        // Actualizamos / creamos su inventario asociado
         $inv = $producto->inventario;
+
         if ($inv) {
             $inv->update([
                 'stock'        => $data['stock'],
@@ -105,17 +126,19 @@ public function store(Request $request)
             ]);
         } else {
             Inventario::create([
-                'id_inventario' => $producto->id_producto,
-                'stock'         => $data['stock'],
-                'stock_minimo'  => $data['stock_minimo'],
+                'id_producto'  => $producto->id_producto,
+                'stock'        => $data['stock'],
+                'stock_minimo' => $data['stock_minimo'],
             ]);
         }
     });
 
     return redirect()->route('productos.index')
         ->with('success', 'Producto actualizado correctamente.');
-    }
+}
 
+
+    // DELETE /productos/{producto}
     public function destroy(Producto $producto)
     {
         $user = auth()->user();
@@ -123,33 +146,23 @@ public function store(Request $request)
             abort(403, 'Solo el administrador puede eliminar registros.');
         }
 
+        // BAJA LÓGICA: no se borra, solo se marca como inactivo
         $producto->estado = 0;
-        $producto->save();
+        $producto->save();   // 👈 aquí MySQL actualiza automáticamente `actualizado_en`
 
         return redirect()->route('productos.index')
             ->with('success', 'Producto dado de baja correctamente.');
     }
-
-    public function catalogoCliente(Request $request)
+    public function catalogoCliente()
     {
-        $busqueda = $request->input('q');
+        $productos = Producto::with(['categoria', 'inventario'])
+            ->where('estado', 'activo')
+            ->orderBy('nombre')
+            ->get();
 
-        $query = Producto::query()
-            ->with(['categoria', 'inventario'])
-            ->where('activo', 1);
-
-        if ($busqueda) {
-            $query->where(function ($q2) use ($busqueda) {
-                $q2->where('nombre', 'like', "%{$busqueda}%")
-                ->orWhere('descripcion', 'like', "%{$busqueda}%");
-            });
-        }
-
-        $productos = $query->orderBy('nombre')->get();
-
-        $cart = session()->get('cart', []);
+        $cart  = session('cart', []);
         $total = collect($cart)->sum(fn($item) => $item['precio'] * $item['cantidad']);
 
-        return view('clientes.productos', compact('productos', 'cart', 'total'));
+        return view('cliente.productos', compact('productos', 'cart', 'total'));
     }
 }

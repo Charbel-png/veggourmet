@@ -3,15 +3,38 @@
 @section('title', 'Productos')
 
 @section('content')
+<div class="container py-4">
     <h1 class="h4 mb-3">Productos</h1>
 
-@if (session('success'))
-    <div class="alert alert-success alert-dismissible fade show" role="alert">
-        {{ session('success') }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
-    </div>
-@endif
+    {{-- Mensaje de éxito --}}
+    @if (session('success'))
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            {{ session('success') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+        </div>
+    @endif
 
+    {{-- Buscador --}}
+    <form method="GET" action="{{ route('productos.index') }}" class="row g-2 mb-3">
+        <div class="col-sm-6 col-md-4">
+            <input
+                type="text"
+                name="q"
+                value="{{ request('q') }}"
+                class="form-control"
+                placeholder="Buscar por nombre o descripción">
+        </div>
+        <div class="col-auto">
+            <button type="submit" class="btn btn-outline-secondary btn-sm">
+                Buscar
+            </button>
+        </div>
+        <div class="col-auto">
+            <a href="{{ route('productos.index') }}" class="btn btn-link btn-sm">
+                Limpiar
+            </a>
+        </div>
+    </form>
 
     <div class="card border-0 shadow-sm">
         <div class="card-body">
@@ -35,8 +58,11 @@
                     <table class="table align-middle table-hover mb-0">
                         <thead>
                             <tr>
+                                <th>#</th>
+                                <th>Imagen</th>
                                 <th>Nombre</th>
                                 <th>Categoría</th>
+                                <th class="text-end">Precio venta</th>
                                 <th class="text-center">Stock</th>
                                 <th class="text-center">Stock mínimo</th>
                                 <th class="text-center">Estado</th>
@@ -46,17 +72,57 @@
                         <tbody>
                             @foreach($productos as $producto)
                                 <tr>
+                                    {{-- ID o contador --}}
+                                    <td>{{ $producto->id_producto }}</td>
+
+                                    {{-- Imagen (acepta URL externa o ruta interna tipo img/productos/...) --}}
+                                    <td>
+                                        @php
+                                            $img = $producto->imagen;
+
+                                            if ($img) {
+                                                // Si NO comienza con http/https, asumimos ruta interna y aplicamos asset()
+                                                if (!preg_match('#^https?://#', $img)) {
+                                                    $img = asset($img);
+                                                }
+                                            }
+                                        @endphp
+
+                                        @if($img)
+                                            <img src="{{ $img }}"
+                                                 alt="{{ $producto->nombre }}"
+                                                 class="img-thumbnail"
+                                                 style="width: 60px; height: 60px; object-fit: cover;">
+                                        @else
+                                            <span class="text-muted">Sin imagen</span>
+                                        @endif
+                                    </td>
+
+                                    {{-- Datos básicos --}}
                                     <td>{{ $producto->nombre }}</td>
                                     <td>{{ $producto->categoria->nombre ?? 'Sin categoría' }}</td>
+
+                                    {{-- Precio --}}
+                                    <td class="text-end">
+                                        ${{ number_format($producto->precio_venta, 2) }}
+                                    </td>
+
+                                    {{-- Stock (desde inventario) --}}
                                     <td class="text-center">
                                         {{ optional($producto->inventario)->stock ?? 0 }}
                                     </td>
                                     <td class="text-center">
                                         {{ optional($producto->inventario)->stock_minimo ?? 0 }}
                                     </td>
+
+                                    {{-- Estado --}}
                                     <td class="text-center">
-                                        {{ $producto->estado == 1 ? 'Activo' : 'Inactivo' }}
+                                        <span class="badge rounded-pill {{ $producto->estado ? 'bg-success' : 'bg-secondary' }}">
+                                            {{ $producto->estado ? 'Activo' : 'Inactivo' }}
+                                        </span>
                                     </td>
+
+                                    {{-- Acciones --}}
                                     <td class="text-end">
                                         @if(in_array(auth()->user()->tipo, ['admin', 'operador']))
                                             {{-- Editar --}}
@@ -66,7 +132,7 @@
                                                 <i class="bi bi-pencil"></i>
                                             </a>
 
-                                            {{-- Eliminar --}}
+                                            {{-- Eliminar (baja lógica) --}}
                                             <form action="{{ route('productos.destroy', $producto) }}"
                                                   method="POST"
                                                   class="d-inline"
@@ -87,11 +153,12 @@
                     </table>
                 </div>
 
-                {{-- Paginación simple, sin texto "Showing 1 to..." --}}
+                {{-- Paginación --}}
                 <div class="mt-3 d-flex justify-content-center">
                     {{ $productos->links('pagination::simple-bootstrap-5') }}
                 </div>
             @endif
         </div>
     </div>
+</div>
 @endsection
