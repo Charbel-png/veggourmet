@@ -2,61 +2,107 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Inventario;
-use App\Models\Producto;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class InventarioController extends Controller
 {
-    /**
-     * Listado de inventario.
-     */
+    // ================================
+    // INDEX: Mostrar todos los productos + stock
+    // ================================
     public function index(Request $request)
     {
-        // Consultamos inventario junto con el producto y su categoría
-        $query = Inventario::with(['producto.categoria']);
+        $this->ensureAdminOperador();
 
-        // Filtro por texto (nombre del producto)
-        if ($request->filled('q')) {
-            $busqueda = $request->input('q');
-            $query->whereHas('producto', function ($q2) use ($busqueda) {
-                $q2->where('nombre', 'like', "%{$busqueda}%");
-            });
+        $q = $request->input('q');
+
+        // Trae todos los productos, incluso los que no están en inventario
+        $query = DB::table('productos as p')
+            ->leftJoin('inventario as i', 'i.id_producto', '=', 'p.id_producto')
+            ->leftJoin('categorias as c', 'c.id_categoria', '=', 'p.id_categoria')
+            ->select(
+                'p.id_producto',
+                'p.nombre as producto_nombre',
+                'c.nombre as categoria_nombre',
+                DB::raw('IFNULL(i.stock, 0) as stock'),
+                DB::raw('IFNULL(i.stock_minimo, 0) as stock_minimo')
+            );
+
+        if ($q) {
+            $query->where('p.nombre', 'like', "%{$q}%");
         }
 
         $inventarios = $query
-            ->orderBy('stock', 'asc')
-            ->paginate(15)
+            ->orderBy('p.nombre', 'asc')
+            ->paginate(20)
             ->withQueryString();
 
         return view('inventario.index', compact('inventarios'));
     }
 
-    /**
-     * Formulario para editar stock / stock mínimo.
-     */
-    public function edit(Inventario $inventario)
+    // ================================
+    // EDIT: Editar o crear registro de stock
+    // ================================
+    public function edit($id_producto)
     {
-        // $inventario ya viene con el registro
-        $inventario->load('producto');
+        $this->ensureAdminOperador();
 
-        return view('inventario.edit', compact('inventario'));
+        $producto = DB::table('productos')->where('id_producto', $id_producto)->first();
+
+        if (!$producto) {
+            abort(404, 'Producto no encontrado');
+        }
+
+        $inventario = DB::table('inventario')
+            ->where('id_producto', $id_producto)
+            ->first();
+
+        return view('inventario.edit', compact('producto', 'inventario'));
     }
 
-    /**
-     * Actualizar inventario.
-     */
-    public function update(Request $request, Inventario $inventario)
+    // ================================
+    // UPDATE: Guardar cambios o crear registro
+    // ================================
+    public function update(Request $request, $id_producto)
     {
+        $this->ensureAdminOperador();
+
         $data = $request->validate([
-            'stock'        => ['required', 'numeric', 'min:0'],
-            'stock_minimo' => ['required', 'numeric', 'min:0'],
+            'stock' => 'required|numeric|min:0',
+            'stock_minimo' => 'required|numeric|min:0',
         ]);
 
-        $inventario->update($data);
+        $existe = DB::table('inventario')->where('id_producto', $id_producto)->exists();
+
+        if ($existe) {
+            DB::table('inventario')
+                ->where('id_producto', $id_producto)
+                ->update([
+                    'stock' => $data['stock'],
+                    'stock_minimo' => $data['stock_minimo'],
+                ]);
+        } else {
+            DB::table('inventario')->insert([
+                'id_producto' => $id_producto,
+                'stock' => $data['stock'],
+                'stock_minimo' => $data['stock_minimo'],
+            ]);
+        }
 
         return redirect()
             ->route('inventario.index')
             ->with('success', 'Inventario actualizado correctamente.');
+    }
+
+    // ================================
+    // Helper para roles
+    // ================================
+    protected function ensureAdminOperador()
+    {
+        $user = auth()->user();
+
+        if (! $user || ! in_array($user->tipo, ['admin', 'operador'])) {
+            abort(403, 'Solo el personal del restaurante puede ver o modificar inventario.');
+        }
     }
 }

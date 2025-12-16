@@ -8,87 +8,74 @@ use App\Http\Controllers\CartController;
 use App\Http\Controllers\ProductoController;
 use App\Http\Controllers\CategoriaController;
 use App\Http\Controllers\ClienteController;
+use App\Http\Controllers\ClientePedidoController;
 use App\Http\Controllers\EmpleadoController;
 use App\Http\Controllers\PedidoController;
 use App\Http\Controllers\CompraController;
 use App\Http\Controllers\RecetaController;
 use App\Http\Controllers\InventarioController;
 
-
-/*
-|--------------------------------------------------------------------------
-| Rutas públicas (sin iniciar sesión)
-|--------------------------------------------------------------------------
-*/
-
-// Inicio -> redirige al login
 Route::get('/', function () {
     return redirect()->route('login');
 });
 
-// Login
+// ------------------- Autenticación -------------------
 Route::get('/login',  [AuthController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [AuthController::class, 'login'])->name('login.post');
 
-// Registro (cliente / operador / admin)
 Route::get('/registro',  [AuthController::class, 'showRegisterForm'])->name('register');
 Route::post('/registro', [AuthController::class, 'register'])->name('register.post');
 
-// Logout
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-/*
-|--------------------------------------------------------------------------
-| Rutas protegidas (requieren autenticación)
-|--------------------------------------------------------------------------
-*/
+// ------------------- Rutas protegidas -------------------
 Route::middleware(['auth'])->group(function () {
 
-    // --------- Dashboards ---------
-    // Admin y operador usan el mismo método, el controlador decide según el tipo
-    Route::get('/admin/dashboard',    [DashboardController::class, 'index'])->name('admin.dashboard');
-    Route::get('/operador/dashboard', [DashboardController::class, 'index'])->name('operador.dashboard');
+    // Dashboards
+    Route::get('/admin/dashboard',    [DashboardController::class, 'index'])
+        ->name('admin.dashboard');
 
-    // Cliente -> siempre mandamos al catálogo
-    Route::get('/cliente/dashboard', function () {
-        return redirect()->route('cliente.productos');
-    })->name('cliente.dashboard');
+    Route::get('/operador/dashboard', [DashboardController::class, 'index'])
+        ->name('operador.dashboard');
 
-    // --------- Catálogo y carrito de cliente ---------
+    Route::get('/clientes/dashboard', function () {
+        return redirect()->route('clientes.productos');
+    })->name('clientes.dashboard');
 
-    // Catálogo de productos para cliente
-    Route::get(
-        '/cliente/productos',
-        [ProductoController::class, 'catalogoCliente']
-    )->name('cliente.productos');
+    // ------------ Cliente: catálogo y carrito ------------
+    Route::get('/clientes/productos', [ProductoController::class, 'catalogoCliente'])
+        ->name('clientes.productos');
 
-    // Carrito del cliente
-    Route::get(
-        '/cliente/carrito',
-        [CartController::class, 'index']
-    )->name('cart.index');
+    Route::get('/clientes/carrito', [CartController::class, 'index'])
+        ->name('clientes.carrito');
 
-    Route::post(
-        '/cliente/carrito/agregar/{producto}',
-        [CartController::class, 'add']
-    )->name('cliente.carrito.add');
+    Route::post('/clientes/carrito/agregar/{producto}', [CartController::class, 'add'])
+        ->name('clientes.carrito.add');
 
-    Route::post(
-        '/cliente/carrito/eliminar/{producto}',
-        [CartController::class, 'remove']
-    )->name('cliente.carrito.remove');
+    Route::post('/clientes/carrito/eliminar/{producto}', [CartController::class, 'remove'])
+        ->name('clientes.carrito.remove');
 
-    Route::post(
-        '/cliente/carrito/vaciar',
-        [CartController::class, 'clear']
-    )->name('cliente.carrito.clear');
+    Route::post('/clientes/carrito/vaciar', [CartController::class, 'clear'])
+        ->name('clientes.carrito.clear');
 
-    // --- Inventario (solo listar y editar) ---
+    Route::post('/clientes/carrito/confirmar', [CartController::class, 'confirm'])
+        ->name('clientes.carrito.confirmar');
+
+    // ----------- Historial de pedidos del cliente -----------
+    Route::get('/clientes/pedidos', [ClientePedidoController::class, 'index'])
+        ->name('clientes.pedidos.index');
+
+    Route::get('/clientes/pedidos/{pedido}', [ClientePedidoController::class, 'show'])
+        ->name('clientes.pedidos.show');
+
+    Route::post('/clientes/pedidos/{pedido}/cancelar', [ClientePedidoController::class, 'cancelar'])
+        ->name('clientes.pedidos.cancelar');
+
+    // ------------ Inventario (solo listar / editar) ------------
     Route::resource('inventario', InventarioController::class)
         ->only(['index', 'edit', 'update']);
 
-
-    // --------- Solicitudes de acceso (solo admin, se valida en el controlador) ---------
+    // ------------ Solicitudes de acceso (admin) ------------
     Route::get('/admin/solicitudes', [AdminUserController::class, 'index'])
         ->name('admin.solicitudes');
 
@@ -98,17 +85,29 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/admin/solicitudes/{user}/rechazar', [AdminUserController::class, 'rechazar'])
         ->name('admin.solicitudes.rechazar');
 
-    // --------- CRUDs principales ---------
+    // ------------ CRUDs principales ------------
     Route::resource('productos',  ProductoController::class)->except(['show']);
     Route::resource('categorias', CategoriaController::class)->except(['show']);
     Route::resource('clientes',   ClienteController::class)->except(['show']);
-    Route::resource('empleados',  EmpleadoController::class)->except(['show']);
 
-    // Movimientos
+    Route::resource('empleados',  EmpleadoController::class)->except(['show']);
+    Route::patch('/empleados/{empleado}/aprobar', [EmpleadoController::class, 'aprobar'])
+        ->name('empleados.aprobar');
+    Route::patch('/empleados/{empleado}/rechazar', [EmpleadoController::class, 'rechazar'])
+        ->name('empleados.rechazar');
+
+    // ------------ Pedidos (admin / operador) ------------
     Route::resource('pedidos', PedidoController::class);
+
+    // Cambiar estado de un pedido (CANCELAR, ENVIADO, DEVUELTO, etc.)
+    // Cambiar estado de un pedido (admin / operador)
+    Route::post('/pedidos/{id}/estado', [PedidoController::class, 'updateEstado'])
+        ->name('pedidos.estado');
+
+    // Movimientos de compras
     Route::resource('compras', CompraController::class);
 
-    // --------- Recetas por producto (rutas anidadas) ---------
+    // ------------ Recetas por producto ------------
     Route::prefix('productos/{producto}')->group(function () {
         Route::get('recetas',                    [RecetaController::class, 'index'])->name('recetas.index');
         Route::get('recetas/create',             [RecetaController::class, 'create'])->name('recetas.create');

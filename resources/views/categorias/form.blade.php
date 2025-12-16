@@ -17,4 +17,3 @@
               class="form-control"
               rows="3">{{ old('descripcion', $categoria->descripcion ?? '') }}</textarea>
 </div>
-2

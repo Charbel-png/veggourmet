@@ -234,28 +234,25 @@
                 <span>Pedidos</span>
             </a>
 
-{{-- INVENTARIO --}}
-<div class="vg-nav-title">Inventario</div>
+            {{-- INVENTARIO --}}
+            <div class="vg-nav-title">Inventario</div>
+            <a href="{{ route('productos.index') }}"
+               class="vg-nav-link {{ request()->routeIs('productos.*') ? 'active' : '' }}">
+                <i class="bi bi-box-seam"></i>
+                <span>Productos</span>
+            </a>
 
-<a href="{{ route('productos.index') }}"
-   class="vg-nav-link {{ request()->routeIs('productos.*') ? 'active' : '' }}">
-    <i class="bi bi-box-seam"></i>
-    <span>Productos</span>
-</a>
+            <a href="{{ route('inventario.index') }}"
+               class="vg-nav-link {{ request()->routeIs('inventario.*') ? 'active' : '' }}">
+                <i class="bi bi-clipboard-data"></i>
+                <span>Inventario</span>
+            </a>
 
-<a href="{{ route('inventario.index') }}"
-   class="vg-nav-link {{ request()->routeIs('inventario.*') ? 'active' : '' }}">
-    <i class="bi bi-clipboard-data"></i>
-    <span>Inventario</span>
-</a>
-
-<a href="{{ route('categorias.index') }}"
-   class="vg-nav-link {{ request()->routeIs('categorias.*') ? 'active' : '' }}">
-    <i class="bi bi-tags"></i>
-    <span>Categorías</span>
-</a>
-
-
+            <a href="{{ route('categorias.index') }}"
+               class="vg-nav-link {{ request()->routeIs('categorias.*') ? 'active' : '' }}">
+                <i class="bi bi-tags"></i>
+                <span>Categorías</span>
+            </a>
 
             {{-- CLIENTES --}}
             <div class="vg-nav-title">Clientes</div>
@@ -283,15 +280,23 @@
         @elseif($user && $user->tipo === 'cliente')
             {{-- MENU CLIENTE --}}
             <div class="vg-nav-title">Cliente</div>
-            <a href="{{ route('cliente.productos') }}"
-               class="vg-nav-link {{ request()->routeIs('cliente.productos') ? 'active' : '' }}">
+
+            <a href="{{ route('clientes.productos') }}"
+               class="vg-nav-link {{ request()->routeIs('clientes.productos') ? 'active' : '' }}">
                 <i class="bi bi-basket"></i>
                 <span>Productos</span>
             </a>
-            <a href="{{ route('cart.index') }}"
-               class="vg-nav-link {{ request()->routeIs('cart.*') ? 'active' : '' }}">
+
+            <a href="{{ route('clientes.carrito') }}"
+               class="vg-nav-link {{ request()->routeIs('clientes.carrito') ? 'active' : '' }}">
                 <i class="bi bi-cart3"></i>
                 <span>Mi carrito</span>
+            </a>
+
+            <a href="{{ route('clientes.pedidos.index') }}"
+               class="vg-nav-link {{ request()->routeIs('clientes.pedidos.*') ? 'active' : '' }}">
+                <i class="bi bi-clock-history"></i>
+                <span>Mis pedidos</span>
             </a>
         @endif
 

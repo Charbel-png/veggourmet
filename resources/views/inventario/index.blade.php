@@ -50,12 +50,17 @@
                         <tbody>
                             @foreach ($inventarios as $inv)
                                 <tr>
-                                    <td>{{ $inv->producto->nombre ?? 'Sin nombre' }}</td>
-                                    <td>{{ $inv->producto->categoria->nombre ?? 'Sin categoría' }}</td>
-                                    <td class="text-center">{{ $inv->stock }}</td>
-                                    <td class="text-center">{{ $inv->stock_minimo }}</td>
+                                    {{-- OJO: ahora usamos los alias que salen del controlador --}}
+                                    <td>{{ $inv->producto_nombre ?? 'Sin nombre' }}</td>
+                                    <td>{{ $inv->categoria_nombre ?? 'Sin categoría' }}</td>
+                                    <td class="text-center">
+                                        {{ rtrim(rtrim($inv->stock, '0'), '.') }}
+                                    </td>
+                                    <td class="text-center">
+                                        {{ rtrim(rtrim($inv->stock_minimo, '0'), '.') }}
+                                    </td>
                                     <td class="text-end">
-                                        {{-- IMPORTANTE: usar id_producto, NO id_inventario --}}
+                                        {{-- Editar usando id_producto --}}
                                         <a href="{{ route('inventario.edit', $inv->id_producto) }}"
                                            class="btn btn-sm btn-outline-primary">
                                             Editar

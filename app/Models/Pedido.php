@@ -11,26 +11,29 @@ class Pedido extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'id_cliente',
+        'cliente_id',
+        'vendedor_id',
         'fecha',
-        'id_estado',
-        'tipo',
-        'id_empleado_toma',
+        'estado_id',
+        'direccion_envio_id',
+        'total',
     ];
 
     public function cliente()
     {
-        return $this->belongsTo(Cliente::class, 'id_cliente', 'id_cliente');
-    }
-
-    public function estado()
-    {
-       return $this->belongsTo(EstadoPedido::class, 'id_estado', 'id_estado');
-    // o el nombre de tu modelo de estados
+        // clientes.id_cliente
+        return $this->belongsTo(Cliente::class, 'cliente_id', 'id_cliente');
     }
 
     public function detalles()
     {
-        return $this->hasMany(PedidoDetalle::class, 'id_pedido', 'id_pedido');
+        // pedidos_detalle.id_pedido
+        return $this->hasMany(DetallePedido::class, 'id_pedido', 'id_pedido');
+    }
+
+    public function estado()
+    {
+        // estados_pedido.estado_id
+        return $this->belongsTo(EstadoPedido::class, 'estado_id', 'estado_id');
     }
 }

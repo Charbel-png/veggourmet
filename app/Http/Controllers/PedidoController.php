@@ -12,19 +12,45 @@ use Illuminate\Support\Facades\DB;
 
 class PedidoController extends Controller
 {
-    // GET /pedidos (panel administración)
+    // ==========================
+    // LISTAR PEDIDOS (ADMIN/OPERADOR)
+    // ==========================
     public function index()
     {
         $this->ensureAdminOperador();
 
-        $pedidos = Pedido::with(['cliente', 'estado'])
-            ->orderByDesc('fecha')
-            ->paginate(20);
+        $pedidos = DB::table('pedidos as p')
+            ->leftJoin('clientes as c', 'c.id_cliente', '=', 'p.id_cliente')
+            ->leftJoin('estados_pedido as e', 'e.id_estado', '=', 'p.id_estado')
+            ->select(
+                'p.id_pedido',
+                'p.fecha',
+                'p.id_estado',
+                'c.nombre as cliente',
+                'e.nombre as estado',
+                'p.tipo'
+            )
+            ->orderByDesc('p.fecha')
+            ->get();
 
-        return view('pedidos.index', compact('pedidos'));
+        $totales = DB::table('pedidos_detalle as d')
+            ->join('productos as pr', 'pr.id_producto', '=', 'd.id_producto')
+            ->selectRaw('d.id_pedido, SUM(d.cantidad * pr.precio_venta) as total')
+            ->groupBy('d.id_pedido')
+            ->pluck('total', 'd.id_pedido');
+
+        foreach ($pedidos as $p) {
+            $p->total = $totales[$p->id_pedido] ?? 0;
+        }
+
+        $estados = EstadoPedido::orderBy('nombre')->get();
+
+        return view('pedidos.index', compact('pedidos', 'estados'));
     }
 
-    // GET /pedidos/create (panel administración)
+    // ==========================
+    // CREAR PEDIDO MANUAL (ADMIN)
+    // ==========================
     public function create()
     {
         $this->ensureAdminOperador();
@@ -36,7 +62,6 @@ class PedidoController extends Controller
         return view('pedidos.create', compact('clientes', 'estados', 'fechaDefault'));
     }
 
-    // POST /pedidos (panel administración)
     public function store(Request $request)
     {
         $this->ensureAdminOperador();
@@ -53,15 +78,16 @@ class PedidoController extends Controller
             'fecha'            => $data['fecha'],
             'id_estado'        => $data['id_estado'],
             'tipo'             => $data['tipo'],
-            'id_empleado_toma' => null, // por ahora no se usa
-        });
+            'id_empleado_toma' => null,
+        ]);
 
-        return redirect()
-            ->route('pedidos.index')
+        return redirect()->route('pedidos.index')
             ->with('success', 'Pedido creado correctamente.');
     }
 
-    // GET /pedidos/{pedido}/edit (panel administración)
+    // ==========================
+    // EDITAR / ACTUALIZAR PEDIDO
+    // ==========================
     public function edit(Pedido $pedido)
     {
         $this->ensureAdminOperador();
@@ -73,7 +99,6 @@ class PedidoController extends Controller
         return view('pedidos.edit', compact('pedido', 'clientes', 'estados', 'fechaDefault'));
     }
 
-    // PUT /pedidos/{pedido} (panel administración)
     public function update(Request $request, Pedido $pedido)
     {
         $this->ensureAdminOperador();
@@ -92,12 +117,13 @@ class PedidoController extends Controller
             'tipo'       => $data['tipo'],
         ]);
 
-        return redirect()
-            ->route('pedidos.index')
+        return redirect()->route('pedidos.index')
             ->with('success', 'Pedido actualizado correctamente.');
     }
 
-    // DELETE /pedidos/{pedido} (panel administración)
+    // ==========================
+    // ELIMINAR PEDIDO
+    // ==========================
     public function destroy(Pedido $pedido)
     {
         $this->ensureAdminOperador();
@@ -107,78 +133,110 @@ class PedidoController extends Controller
         return back()->with('success', 'Pedido eliminado correctamente.');
     }
 
-    // GET /pedidos/{id} - detalle del pedido
     public function show($id)
     {
-        $user = auth()->user();
+        $this->ensureAdminOperador();
 
-        // Pedido + cliente + estado + detalles con producto
-        $query = Pedido::with([
-                'cliente',
-                'estado',
-                'detalles.producto',
-            ])
-            ->where('id_pedido', $id);
+        // Datos generales del pedido
+        $pedido = DB::table('pedidos as p')
+            ->leftJoin('clientes as c', 'c.id_cliente', '=', 'p.id_cliente')
+            ->leftJoin('estados_pedido as e', 'e.id_estado', '=', 'p.id_estado')
+            ->select(
+                'p.id_pedido',
+                'p.fecha',
+                'p.tipo',
+                'c.nombre',
+                'c.ap_paterno',
+                'c.ap_materno',
+                'e.nombre as estado_nombre'
+            )
+            ->where('p.id_pedido', $id)
+            ->first();
 
-        // Reglas de acceso:
-        //  - admin / operador: cualquier pedido
-        //  - cliente: solo sus propios pedidos
-        if ($user && $user->tipo === 'cliente') {
-            $clienteId = $user->id_cliente ?? null;
-            $query->where('id_cliente', $clienteId);
+        if (! $pedido) {
+            abort(404, 'Pedido no encontrado.');
         }
 
-        $pedido = $query->firstOrFail();
+        // Detalle de productos
+        $detalles = DB::table('pedidos_detalle as d')
+            ->join('productos as pr', 'pr.id_producto', '=', 'd.id_producto')
+            ->where('d.id_pedido', $id)
+            ->select(
+                'pr.nombre as producto',
+                'd.cantidad',
+                'pr.precio_venta as precio_unitario',
+                DB::raw('d.cantidad * pr.precio_venta AS importe')
+            )
+            ->get();
 
-        // Cálculo de totales (usando precio_venta del producto)
-        $subtotal = 0;
+        $subtotal = $detalles->sum('importe');
+        $total    = $subtotal; // por ahora sin IVA/descuentos
 
-        foreach ($pedido->detalles as $detalle) {
-            $precio   = $detalle->producto->precio_venta ?? 0;
-            $cantidad = (float) $detalle->cantidad;
-            $importe  = $cantidad * (float) $precio;
-
-            // Propiedad "virtual" solo para la vista
-            $detalle->importe_calculado = $importe;
-
-            $subtotal += $importe;
-        }
-
-        $total = $subtotal; // aquí luego puedes sumar IVA, descuentos, etc.
-
-        return view('pedidos.show', compact('pedido', 'subtotal', 'total'));
+        return view('pedidos.show', compact('pedido', 'detalles', 'subtotal', 'total'));
     }
 
-    /**
-     * Confirmar pedido a partir del carrito del cliente
-     * y descontar stock del inventario.
-     *
-     * Ruta: POST /cliente/pedido/confirmar
-     */
+    public function updateEstado(Request $request, $id)
+    {
+        $this->ensureAdminOperador();
+
+        $request->validate([
+            'id_estado' => 'required|integer|exists:estados_pedido,id_estado',
+        ]);
+
+        $pedido = Pedido::findOrFail($id);
+        $estadoNuevo = EstadoPedido::find($request->id_estado);
+
+        if (! $estadoNuevo) {
+            return back()->with('error', 'Estado no válido.');
+        }
+
+        // Regla: No se puede cancelar un pedido entregado
+        $estadoActual = EstadoPedido::find($pedido->id_estado);
+        if ($estadoActual && strtolower($estadoActual->nombre) === 'entregado' &&
+            strtolower($estadoNuevo->nombre) === 'cancelado') {
+            return back()->with('error', 'No se puede cancelar un pedido entregado.');
+        }
+
+        // Si se cancela o devuelve → restaurar stock
+        if (in_array(strtolower($estadoNuevo->nombre), ['cancelado', 'devuelto'])) {
+            $this->restaurarStockPedido($pedido->id_pedido);
+        }
+
+        if (in_array(strtolower($estadoActual->nombre), ['cancelado', 'devuelto']) &&
+            !in_array(strtolower($estadoNuevo->nombre), ['cancelado', 'devuelto'])) {
+            return back()->with('error', 'No se puede modificar un pedido cancelado o devuelto.');
+        }
+
+        $pedido->id_estado = $estadoNuevo->id_estado;
+        $pedido->save();
+
+        return redirect()
+            ->route('pedidos.index')
+            ->with('success', 'Estado del pedido actualizado correctamente.');
+    }
+
+    // ==========================
+    // CONFIRMAR PEDIDO DESDE EL CARRITO (CLIENTE)
+    // ==========================
     public function confirmarDesdeCarrito(Request $request)
     {
         $this->ensureSoloCliente();
 
-        // Carrito almacenado en sesión
         $cart = session('cart', []);
-
         if (empty($cart)) {
-            return redirect()
-                ->route('cart.index')
+            return redirect()->route('clientes.carrito')
                 ->with('error', 'Tu carrito está vacío.');
         }
 
-        $user      = auth()->user();
+        $user = auth()->user();
         $idCliente = $user->id_cliente ?? null;
 
         DB::beginTransaction();
 
         try {
-            // Buscar estado "Pendiente" (fallback al id 1 si no existe)
             $estadoPendiente = EstadoPedido::where('nombre', 'Pendiente')->first();
-            $idEstado        = $estadoPendiente ? $estadoPendiente->id_estado : 1;
+            $idEstado = $estadoPendiente ? $estadoPendiente->id_estado : 1;
 
-            // 1) Crear pedido
             $pedido = Pedido::create([
                 'id_cliente'       => $idCliente,
                 'fecha'            => now(),
@@ -187,17 +245,11 @@ class PedidoController extends Controller
                 'id_empleado_toma' => null,
             ]);
 
-            // 2) Crear un detalle por cada producto del carrito
             foreach ($cart as $item) {
-                // 🔴 IMPORTANTE:
-                // Aquí asumimos que cada elemento del carrito
-                // tiene las claves 'id_producto' y 'cantidad'.
                 $idProducto = $item['id_producto'] ?? null;
-                $cantidad   = $item['cantidad'] ?? null;
+                $cantidad = $item['cantidad'] ?? 0;
 
-                if (! $idProducto || ! $cantidad || $cantidad <= 0) {
-                    continue;
-                }
+                if (!$idProducto || $cantidad <= 0) continue;
 
                 DetallePedido::create([
                     'id_pedido'   => $pedido->id_pedido,
@@ -206,32 +258,73 @@ class PedidoController extends Controller
                 ]);
             }
 
-            // 3) Descontar stock del inventario según ese pedido
             $this->descontarStockPedido($pedido->id_pedido);
 
-            // 4) Vaciar carrito
             session()->forget('cart');
 
             DB::commit();
 
-            return redirect()
-                ->route('pedidos.show', $pedido->id_pedido)
+            return redirect()->route('clientes.pedidos.index')
                 ->with('success', 'Pedido confirmado y stock actualizado correctamente.');
+
         } catch (\Throwable $e) {
             DB::rollBack();
-
             report($e);
 
-            return redirect()
-                ->route('cart.index')
-                ->with('error', 'Ocurrió un problema al confirmar tu pedido. Intenta de nuevo.');
+            return redirect()->route('clientes.carrito')
+                ->with('error', 'Ocurrió un problema al confirmar tu pedido: ' . $e->getMessage());
         }
     }
 
-    /**
-     * Descuenta stock del inventario según el detalle del pedido.
-     */
+    // ==========================
+    // DESCONTAR STOCK DE INVENTARIO
+    // ==========================
     protected function descontarStockPedido(int $idPedido): void
+    {
+        $detalles = DetallePedido::where('id_pedido', $idPedido)->get();
+
+        foreach ($detalles as $detalle) {
+            $inventario = Inventario::where('id_producto', $detalle->id_producto)->lockForUpdate()->first();
+
+            if (!$inventario) {
+                throw new \Exception("No hay inventario registrado para el producto #{$detalle->id_producto}.");
+            }
+
+            $stockActual = (float) $inventario->stock;
+            $cantidad = (float) $detalle->cantidad;
+
+            if ($cantidad > $stockActual) {
+                throw new \Exception(
+                    "Stock insuficiente para el producto #{$detalle->id_producto}. ".
+                    "Quedan {$stockActual} en inventario y se intentan descontar {$cantidad}."
+                );
+            }
+
+            $inventario->stock = $stockActual - $cantidad;
+            $inventario->save();
+        }
+    }
+
+    // ==========================
+    // VALIDADORES DE ROL
+    // ==========================
+    protected function ensureSoloCliente()
+    {
+        $user = auth()->user();
+        if (!$user || $user->tipo !== 'cliente') {
+            abort(403, 'Solo los clientes pueden realizar esta acción.');
+        }
+    }
+
+    protected function ensureAdminOperador()
+    {
+        $user = auth()->user();
+        if (!$user || !in_array($user->tipo, ['admin', 'operador'])) {
+            abort(403, 'Solo el personal autorizado puede gestionar pedidos.');
+        }
+    }
+
+    protected function restaurarStockPedido(int $idPedido): void
     {
         $detalles = DetallePedido::where('id_pedido', $idPedido)->get();
 
@@ -242,43 +335,12 @@ class PedidoController extends Controller
         foreach ($detalles as $detalle) {
             $inventario = Inventario::where('id_producto', $detalle->id_producto)->first();
 
-            // Si no hay inventario registrado para ese producto, lo ignoramos
             if (! $inventario) {
                 continue;
             }
 
-            $stockActual = (float) $inventario->stock;
-            $cantidad    = (float) $detalle->cantidad;
-
-            // Nuevo stock (no dejamos que sea negativo)
-            $nuevoStock = max(0, $stockActual - $cantidad);
-
-            $inventario->stock = $nuevoStock;
+            $inventario->stock += $detalle->cantidad; // devolvemos el stock
             $inventario->save();
-        }
-    }
-
-    /**
-     * Solo clientes (para flujo de carrito / cliente).
-     */
-    protected function ensureSoloCliente()
-    {
-        $user = auth()->user();
-
-        if (! $user || $user->tipo !== 'cliente') {
-            abort(403, 'Solo los clientes pueden realizar esta acción.');
-        }
-    }
-
-    /**
-     * Solo admin u operador (para panel de administración).
-     */
-    protected function ensureAdminOperador()
-    {
-        $user = auth()->user();
-
-        if (! $user || ! in_array($user->tipo, ['admin', 'operador'])) {
-            abort(403, 'Solo el personal del restaurante puede gestionar pedidos.');
         }
     }
 }

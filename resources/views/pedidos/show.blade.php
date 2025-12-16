@@ -20,10 +20,22 @@
     </div>
 
     @php
-        $cliente = $pedido->cliente;
-        $nombreCliente = $cliente
-            ? trim(($cliente->nombre ?? '') . ' ' . ($cliente->ap_paterno ?? '') . ' ' . ($cliente->ap_materno ?? ''))
-            : 'Mostrador / sin registrar';
+        // Construimos el nombre del cliente con lo que venga
+        $nombreCliente = $pedido->cliente_nombre ?? null;
+
+        if (! $nombreCliente) {
+            $nombreCliente = trim(
+                ($pedido->nombre ?? '') . ' ' .
+                ($pedido->ap_paterno ?? '') . ' ' .
+                ($pedido->ap_materno ?? '')
+            );
+        }
+
+        if ($nombreCliente === '') {
+            $nombreCliente = 'Mostrador / sin registrar';
+        }
+
+        $fecha = \Carbon\Carbon::parse($pedido->fecha);
     @endphp
 
     <div class="row">
@@ -38,7 +50,7 @@
                         </div>
                         <span class="badge rounded-pill px-3 py-2"
                               style="background-color:#1987541a;color:#198754;">
-                            {{ $pedido->estado->nombre ?? 'Sin estado' }}
+                            {{ $pedido->estado_nombre ?? 'Sin estado' }}
                         </span>
                     </div>
                 </div>
@@ -52,7 +64,7 @@
                         <div class="col-md-3">
                             <p class="mb-1 text-muted small">Fecha</p>
                             <p class="fw-semibold mb-0">
-                                {{ optional($pedido->fecha)->format('d/m/Y H:i') ?? $pedido->fecha }}
+                                {{ $fecha->format('d/m/Y H:i') }}
                             </p>
                         </div>
                         <div class="col-md-3">
@@ -76,19 +88,17 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @forelse($pedido->detalles as $detalle)
+                                @forelse($detalles as $detalle)
                                     <tr>
-                                        <td>
-                                            {{ $detalle->producto->nombre ?? 'Producto eliminado' }}
-                                        </td>
+                                        <td>{{ $detalle->producto }}</td>
                                         <td class="text-center">
-                                            {{ rtrim(rtrim($detalle->cantidad, '0'), '.') }}
+                                            {{ rtrim(rtrim((string)$detalle->cantidad, '0'), '.') }}
                                         </td>
                                         <td class="text-end">
-                                            ${{ number_format($detalle->producto->precio_venta ?? 0, 2) }}
+                                            ${{ number_format($detalle->precio_unitario, 2) }}
                                         </td>
                                         <td class="text-end">
-                                            ${{ number_format($detalle->importe_calculado ?? 0, 2) }}
+                                            ${{ number_format($detalle->importe, 2) }}
                                         </td>
                                     </tr>
                                 @empty
@@ -113,7 +123,6 @@
                                         ${{ number_format($subtotal, 2) }}
                                     </span>
                                 </li>
-                                {{-- aquí podrías agregar IVA, descuentos, etc. --}}
                                 <li class="list-group-item d-flex justify-content-between px-0">
                                     <span class="fw-semibold">Total</span>
                                     <span class="fw-bold text-success">
@@ -125,23 +134,6 @@
                     </div>
                 </div>
 
-            </div>
-        </div>
-
-        {{-- Puedes usar esta columna para notas, estado, etc. --}}
-        <div class="col-lg-4 mb-3">
-            <div class="card border-0 shadow-sm">
-                <div class="card-body">
-                    <h3 class="h6 mb-3">Información adicional</h3>
-                    <p class="small text-muted mb-2">
-                        Aquí puedes agregar comentarios del pedido, instrucciones especiales
-                        o información de entrega (por ejemplo, dirección para Delivery).
-                    </p>
-                    <p class="small text-muted mb-0">
-                        Más adelante podemos ligar aquí el historial de cambios de estado
-                        (pendiente, pagado, entregado, cancelado).
-                    </p>
-                </div>
             </div>
         </div>
     </div>

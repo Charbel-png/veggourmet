@@ -47,7 +47,7 @@ class AuthController extends Controller
         }
 
         if ($user->tipo === 'cliente') {
-            return redirect()->route('cliente.dashboard');
+            return redirect()->route('clientes.dashboard');
         }
 
         return redirect()->route('login');

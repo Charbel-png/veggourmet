@@ -14,6 +14,10 @@ class AdminUserController extends Controller
         $solicitudes = User::whereIn('tipo', ['admin', 'operador'])
             ->orderBy('created_at', 'desc')
             ->paginate(10);
+        
+        if (auth()->user()->tipo === 'cliente') {
+            $pedidos = $pedidos->where('p.id_cliente', auth()->user()->id_cliente);
+        }
 
         return view('admin.solicitudes.index', compact('solicitudes'));
     }

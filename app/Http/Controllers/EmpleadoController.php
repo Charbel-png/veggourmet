@@ -10,7 +10,6 @@ use Illuminate\Support\Facades\Hash;
 
 class EmpleadoController extends Controller
 {
-    // GET /empleados
     public function index()
     {
         $user = auth()->user();
@@ -19,22 +18,22 @@ class EmpleadoController extends Controller
             abort(403, 'Solo el admin puede ver empleados.');
         }
 
-        $empleados = Empleado::with('puesto')->orderBy('nombre')->get();
+        $empleados = Empleado::with('puesto')
+            ->orderBy('nombre')
+            ->get();
 
         return view('empleados.index', compact('empleados'));
     }
 
-    // GET /empleados/create
     public function create()
     {
-        $this->authorize('admin-only'); // o la lógica que uses
+        $this->authorize('admin-only'); 
 
         $puestos = Puesto::orderBy('nombre')->get();
 
         return view('empleados.create', compact('puestos'));
     }
 
-    // POST /empleados
     public function store(Request $request)
     {
         $user = auth()->user();
@@ -50,14 +49,15 @@ class EmpleadoController extends Controller
             'password'  => 'required|string|min:6|confirmed',
         ]);
 
-        // 1) Crear empleado
+        // 1) Crear empleado, marcado como NO aprobado todavía
         $empleado = Empleado::create([
             'nombre'    => $request->nombre,
             'email'     => $request->email,
             'id_puesto' => $request->id_puesto,
+            'aprobado'  => false,  // 👈 queda “pendiente”
         ]);
 
-        // 2) Crear usuario tipo operador
+        // 2) Crear usuario tipo operador (si así lo quieres)
         User::create([
             'name'     => $empleado->nombre,
             'email'    => $empleado->email,
@@ -69,7 +69,6 @@ class EmpleadoController extends Controller
             ->with('success', 'Empleado / operador creado correctamente.');
     }
 
-    // GET /empleados/{empleado}/edit
     public function edit(Empleado $empleado)
     {
         $user = auth()->user();
@@ -83,7 +82,6 @@ class EmpleadoController extends Controller
         return view('empleados.edit', compact('empleado', 'puestos'));
     }
 
-    // PUT /empleados/{empleado}
     public function update(Request $request, Empleado $empleado)
     {
         $user = auth()->user();
@@ -104,13 +102,11 @@ class EmpleadoController extends Controller
             'id_puesto' => $request->id_puesto,
         ]);
 
-        // Opcional: podrías buscar el User y actualizar nombre/email también
 
         return redirect()->route('empleados.index')
             ->with('success', 'Empleado actualizado correctamente.');
     }
 
-    // DELETE /empleados/{empleado}
     public function destroy(Empleado $empleado)
     {
         $user = auth()->user();
@@ -123,5 +119,37 @@ class EmpleadoController extends Controller
 
         return redirect()->route('empleados.index')
             ->with('success', 'Empleado eliminado correctamente.');
+    }
+
+    public function aprobar(Empleado $empleado)
+    {
+        $user = auth()->user();
+
+        if (! $user || $user->tipo !== 'admin') {
+            abort(403);
+        }
+
+        $empleado->update([
+            'aprobado' => true,
+        ]);
+
+        return redirect()->route('empleados.index')
+            ->with('success', 'Empleado aprobado correctamente.');
+    }
+
+    public function rechazar(Empleado $empleado)
+    {
+        $user = auth()->user();
+
+        if (! $user || $user->tipo !== 'admin') {
+            abort(403);
+        }
+
+        $empleado->update([
+            'aprobado' => false,
+        ]);
+
+        return redirect()->route('empleados.index')
+            ->with('success', 'Empleado marcado como no aprobado.');
     }
 }
